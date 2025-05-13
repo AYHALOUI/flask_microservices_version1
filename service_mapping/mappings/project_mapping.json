@@ -1,0 +1,12 @@
+{
+  "id": "hubspot_id",
+  "name": "properties.name",
+  "description": "properties.description",
+  "status": "properties.hs_pipeline_stage",
+  "start_date": "properties.start_date",
+  "end_date": "properties.end_date",
+  "budget": "properties.amount",
+  "contact_id": "properties.contact_id",
+  "created_at": "properties.createdate",
+  "updated_at": "properties.hs_lastmodifieddate"
+}

@@ -1,0 +1,219 @@
+networks:
+  microservices_network:
+    driver: bridge
+
+services:
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    privileged: true
+    volumes:
+      - ./gateway:/app
+      - ./data/gateway:/app/data
+      - ./shared:/app/shared
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    ports:
+      - "9000:5000"
+    networks:
+      - microservices_network
+    depends_on:
+      - service_contacts
+      - service_transformer
+      # - service_storage
+      # - service_debugger
+
+  service_contacts:
+    build: ./service_contacts
+    container_name: service_contacts
+    environment:
+      - TRANSFORM_SERVICE_URL=http://service_transformer:5000
+      - service_connect=http://service_connect:5000
+    volumes:
+      - ./service_contacts:/app
+      - ./data/contacts:/app/data
+      - ./shared:/app/shared
+    ports:
+      - "5001:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    depends_on:
+      - service_transformer
+  
+  service_projects:
+    build: ./service_projects
+    container_name: service_projects
+    environment:
+      - TRANSFORM_SERVICE_URL=http://service_transformer:5000
+      - SERVICE_CONNECT=http://service_connect:5000
+    volumes:
+      - ./service_projects:/app
+      - ./data/projects:/app/data
+      - ./shared:/app/shared
+    ports:
+      - "5005:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    depends_on:
+      - service_transformer
+  
+  service_contracts:
+    build: ./service_contracts
+    container_name: service_contracts
+    environment:
+      - TRANSFORM_SERVICE_URL=http://service_transformer:5000
+      - SERVICE_CONNECT=http://service_connect:5000
+    volumes:
+      - ./service_contracts:/app
+      - ./data/contracts:/app/data
+      - ./shared:/app/shared
+    ports:
+      - "5009:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    depends_on:
+      - service_transformer
+
+
+
+  # service_storage:
+  #   build: ./service_storage
+  #   container_name: service_storage
+  #   volumes:
+  #     - ./data/storage:/app/data
+  #     - ./shared:/app/shared
+  #     - ./service_storage:/app
+  #   ports:
+  #     - "5007:5000"
+  #   networks:
+  #     - microservices_network
+  #   restart: unless-stopped
+
+  # service_debugger:
+  #   build: ./service_debugger
+  #   container_name: service_debugger
+  #   environment:
+  #     LOGS_DB_PATH: /app/data/logs.json
+  #     EXCHANGES_DB_PATH: /app/data/exchanges.json
+  #   volumes:
+  #     - ./service_debugger:/app
+  #     - ./data/debugger:/app/data
+  #   ports:
+  #     - "5006:5000"
+  #   networks:
+  #     - microservices_network
+  #   restart: unless-stopped
+
+  service_transformer:
+    build: ./service_transformer
+    container_name: service_transformer
+    environment:
+      - MAPPING_DIR=/app/mappings
+      - SERVICE_CONNECT=http://service_connect:5000
+    volumes:
+      - ./data/transformer:/app/data
+      - ./service_transformer:/app
+      - ./shared:/app/shared
+    ports:
+      - "5002:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+  
+  # flask-api:
+  #   image: python:3.9-slim
+  #   working_dir: /app
+  #   volumes:
+  #     - ./mock-external-apis:/app
+  #   ports:
+  #     - "5000:5000"
+  #   command: >
+  #     bash -c "pip install flask &&
+  #              python app.py"
+  # service_project:
+  #   build: ./service_project
+  #   container_name: service_project
+  #   volumes:
+  #     - ./service_project:/app
+  #     - ./data/project:/app/data
+  #     - ./shared:/app/shared
+  #   ports:
+  #     - "5003:5000"
+  #   networks:
+  #     - microservices_network
+  #   restart: unless-stopped
+  
+
+  service_connect:
+    build: ./service_connect
+    container_name: service_connect
+    environment:
+      - OGGO_BASE_URL=http://mock-external-apis:5000
+      - OGGO_API_KEY=mock-oggo-key
+      - HUBSPOT_BASE_URL=http://mock-external-apis:5000
+      - HUBSPOT_API_KEY=mock-hubspot-key
+    volumes:
+      - ./service_connect:/app
+    ports:
+      - "5008:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    depends_on:
+      - mock-external-apis
+
+
+ # node js service
+  # mock-external-apis:
+  #   build: ./mock-external-apis
+  #   container_name: mock-external-apis
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - microservices_network
+  
+  # mock-external-apis:
+  #   build: ./mock-external-apis
+  #   container_name: mock-external-apis
+  #   ports:
+  #     - "3000:5000"
+  #   # networks:
+  #   #   - microservices_network
+  #   restart: unless-stopped
+
+  mock-external-apis:
+    build: ./mock-external-apis
+    container_name: mock-external-apis
+    ports:
+      - "3000:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    volumes:
+      - ./mock-external-apis:/app  # For development
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+
+  service_mapping:
+    build: ./service_mapping
+    container_name: service_mapping
+    environment:
+      - SERVICE_CONNECT=http://service_connect:5000
+    volumes:
+      - ./service_mapping:/app
+      - ./data/mapping:/app/data
+      - ./shared:/app/shared
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "5004:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    depends_on:
+      - service_transformer
+      - service_contacts
+      - service_connect
