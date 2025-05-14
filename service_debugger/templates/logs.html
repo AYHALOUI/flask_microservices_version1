@@ -29,31 +29,31 @@
                     <label for="service" class="form-label">Service</label>
                     <select class="form-select" id="service" name="service">
                         <option value="">All Services</option>
-                        <option value="gateway" {% if request.args.get('service') == 'gateway' %}selected{% endif %}>Gateway</option>
-                        <option value="contact" {% if request.args.get('service') == 'contact' %}selected{% endif %}>Contacts</option>
-                        <option value="transform" {% if request.args.get('service') == 'transform' %}selected{% endif %}>Transformer</option>
-                        <option value="mapping" {% if request.args.get('service') == 'mapping' %}selected{% endif %}>Mapping</option>
-                        <option value="mock-api" {% if request.args.get('service') == 'mock-api' %}selected{% endif %}>Mock API</option>
-                        <option value="connect" {% if request.args.get('service') == 'connect' %}selected{% endif %}>Connect</option>
+                        <option value="gateway">Gateway</option>
+                        <option value="contact">Contacts</option>
+                        <option value="transform">Transformer</option>
+                        <option value="mapping">Mapping</option>
+                        <option value="mock-api">Mock API</option>
+                        <option value="connect">Connect</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label for="level" class="form-label">Log Level</label>
                     <select class="form-select" id="level" name="level">
                         <option value="">All Levels</option>
-                        <option value="debug" {% if request.args.get('level') == 'debug' %}selected{% endif %}>Debug</option>
-                        <option value="info" {% if request.args.get('level') == 'info' %}selected{% endif %}>Info</option>
-                        <option value="warning" {% if request.args.get('level') == 'warning' %}selected{% endif %}>Warning</option>
-                        <option value="error" {% if request.args.get('level') == 'error' %}selected{% endif %}>Error</option>
+                        <option value="debug">Debug</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label for="limit" class="form-label">Limit</label>
                     <select class="form-select" id="limit" name="limit">
-                        <option value="50" {% if request.args.get('limit') == '50' %}selected{% endif %}>50</option>
-                        <option value="100" {% if request.args.get('limit', '100') == '100' %}selected{% endif %}>100</option>
-                        <option value="200" {% if request.args.get('limit') == '200' %}selected{% endif %}>200</option>
-                        <option value="500" {% if request.args.get('limit') == '500' %}selected{% endif %}>500</option>
+                        <option value="50">50</option>
+                        <option value="100" selected>100</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -87,16 +87,18 @@
         </div>
         
         <div class="mt-4 text-center">
-            <p class="text-muted">Auto-refreshing every 10 seconds</p>
+            <p class="text-muted">Auto-refreshing every 30 seconds</p>
             <button class="btn btn-secondary" onclick="location.reload()">Refresh Now</button>
+            <a href="/test-template" class="btn btn-primary">Test Template</a>
+            <a href="/direct-html" class="btn btn-success">Direct HTML</a>
         </div>
     </div>
 
     <script>
-        // Auto-refresh logs every 10 seconds
+        // Auto-refresh logs every 30 seconds
         setTimeout(function() {
             location.reload();
-        }, 10000);
+        }, 30000);
     </script>
 </body>
 </html>
