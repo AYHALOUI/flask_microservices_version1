@@ -5,6 +5,9 @@ from flask import Flask, request, jsonify
 from tinydb import TinyDB, Query
 import requests
 
+import datetime
+import json
+from flask import render_template
 
 
 app = Flask(__name__)
@@ -134,6 +137,74 @@ def get_exchanges():
     except Exception as e:
         logger.error(f"Error retrieving exchanges: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+from flask import render_template
+import datetime
+
+@app.route('/ui', methods=['GET'])
+def logs_ui():
+    """Web UI for viewing logs"""
+    try:
+        # Get query parameters
+        service = request.args.get('service')
+        level = request.args.get('level')
+        limit = request.args.get('limit', default=100, type=int)
+        
+        # Apply filters similar to the /logs endpoint
+        if service and level:
+            Log = Query()
+            logs = logs_db.search((Log.service == service) & (Log.level == level))
+        elif service:
+            Log = Query()
+            logs = logs_db.search(Log.service == service)
+        elif level:
+            Log = Query()
+            logs = logs_db.search(Log.level == level)
+        else:
+            logs = logs_db.all()
+        
+        # Sort by timestamp (newest first) and limit results
+        logs.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+        logs = logs[:limit]
+        
+        # Format logs for display
+        for log in logs:
+            # Convert timestamp to readable format
+            ts = log.get('timestamp', 0)
+            log['timestamp_formatted'] = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Add color class based on level
+            level = log.get('level', 'info').lower()
+            if level == 'error':
+                log['level_color'] = 'danger'
+            elif level == 'warning':
+                log['level_color'] = 'warning'
+            elif level == 'info':
+                log['level_color'] = 'info'
+            else:
+                log['level_color'] = 'secondary'
+                
+            # Format data if present - handle serialization safely
+            if 'data' in log and log['data']:
+                try:
+                    if isinstance(log['data'], str):
+                        # Try to parse string as JSON
+                        try:
+                            log['data'] = json.dumps(json.loads(log['data']), indent=2)
+                        except:
+                            # If not valid JSON, keep as is
+                            pass
+                    else:
+                        # Serialize dict or other objects
+                        log['data'] = json.dumps(log['data'], indent=2, default=str)
+                except Exception as e:
+                    log['data'] = f"Error formatting data: {str(e)}"
+        
+        return render_template('logs.html', logs=logs)
+    
+    except Exception as e:
+        logger.error(f"Error rendering logs UI: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 
 if __name__ == '__main__':

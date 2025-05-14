@@ -92,20 +92,20 @@ services:
   #     - microservices_network
   #   restart: unless-stopped
 
-  # service_debugger:
-  #   build: ./service_debugger
-  #   container_name: service_debugger
-  #   environment:
-  #     LOGS_DB_PATH: /app/data/logs.json
-  #     EXCHANGES_DB_PATH: /app/data/exchanges.json
-  #   volumes:
-  #     - ./service_debugger:/app
-  #     - ./data/debugger:/app/data
-  #   ports:
-  #     - "5006:5000"
-  #   networks:
-  #     - microservices_network
-  #   restart: unless-stopped
+  service_debugger:
+    build: ./service_debugger
+    container_name: service_debugger
+    environment:
+      LOGS_DB_PATH: /app/data/logs.json
+      EXCHANGES_DB_PATH: /app/data/exchanges.json
+    volumes:
+      - ./service_debugger:/app
+      - ./data/debugger:/app/data
+    ports:
+      - "5006:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
 
   service_transformer:
     build: ./service_transformer

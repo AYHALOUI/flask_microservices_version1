@@ -153,6 +153,11 @@ def list_services():
 @app.route('/api/<service>/<path:route>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 def gateway_router(service, route):
     """Main gateway router that forwards requests to appropriate services"""
+    log_to_debugger("gateway", "info", f"Routing request to {service}/{route}", {
+        "method": request.method,
+        "headers": dict(request.headers),
+        "service": service
+    })
     # Validate service exists
     service, error_response, error_code = _validate_service(service)
     if error_response:
@@ -169,6 +174,12 @@ def gateway_router(service, route):
     response = _forward_request(service_url, request.method, request.get_data())
     
     response_data = response.get_data().decode('utf-8') if response.get_data() else None
+
+     # After forwarding the request
+    log_to_debugger("gateway", "info", f"Successfully routed request to {service}/{route}", {
+        "status_code": response.status_code,
+        "service": service
+    })
 
     return response
 
