@@ -13,6 +13,8 @@ services:
       - ./shared:/app/shared
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
+    environment:
+      - SERVICE_CONTACT=http://service_contacts:5000
     ports:
       - "9000:5000"
     networks:
@@ -29,6 +31,7 @@ services:
     environment:
       - TRANSFORM_SERVICE_URL=http://service_transformer:5000
       - service_connect=http://service_connect:5000
+      - QUEUE_SERVICE_URL=http://service_queue:5000
     volumes:
       - ./service_contacts:/app
       - ./data/contacts:/app/data
@@ -195,3 +198,16 @@ services:
       - service_transformer
       - service_contacts
       - service_connect
+
+  service_queue:
+    build: ./service_queue
+    container_name: service_queue
+    volumes:
+      - ./service_queue:/app
+      - ./data/queue:/app/data
+      - ./shared:/app/shared
+    ports:
+      - "5010:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped

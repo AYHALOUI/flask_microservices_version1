@@ -92,28 +92,28 @@ def collect_log():
         logger.error(f"Error storing log: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/exchange', methods=['POST'])
-def record_exchange():
-    """Record an exchange between services"""
-    try:
-        exchange_data = request.json
-        if not exchange_data:
-            return jsonify({'error': 'No exchange data provided'}), 400
+# @app.route('/exchange', methods=['POST'])
+# def record_exchange():
+#     """Record an exchange between services"""
+#     try:
+#         exchange_data = request.json
+#         if not exchange_data:
+#             return jsonify({'error': 'No exchange data provided'}), 400
 
-        # Ensure required fields
-        required_fields = ['source_service', 'target_service', 'request_data']
-        for field in required_fields:
-            if field not in exchange_data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+#         # Ensure required fields
+#         required_fields = ['source_service', 'target_service', 'request_data']
+#         for field in required_fields:
+#             if field not in exchange_data:
+#                 return jsonify({'error': f'Missing required field: {field}'}), 400
                 
-        if 'timestamp' not in exchange_data:
-            exchange_data['timestamp'] = time.time()
-        exchanges_db.insert(exchange_data)
+#         if 'timestamp' not in exchange_data:
+#             exchange_data['timestamp'] = time.time()
+#         exchanges_db.insert(exchange_data)
         
-        return jsonify({'status': 'success', 'message': 'Exchange recorded successfully'})
-    except Exception as e:
-        logger.error(f"Error recording exchange: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+#         return jsonify({'status': 'success', 'message': 'Exchange recorded successfully'})
+#     except Exception as e:
+#         logger.error(f"Error recording exchange: {str(e)}")
+#         return jsonify({'error': str(e)}), 500
 
 @app.route('/logs', methods=['GET'])
 def get_logs():
@@ -151,42 +151,42 @@ def get_logs():
         logger.error(f"Error retrieving logs: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/exchanges', methods=['GET'])
-def get_exchanges():
-    """Retrieve service exchanges with optional filtering"""
-    try:
-        # Get query parameters
-        source = request.args.get('source_service')
-        target = request.args.get('target_service')
-        limit = request.args.get('limit', default=100, type=int)
+# @app.route('/exchanges', methods=['GET'])
+# def get_exchanges():
+#     """Retrieve service exchanges with optional filtering"""
+#     try:
+#         # Get query parameters
+#         source = request.args.get('source_service')
+#         target = request.args.get('target_service')
+#         limit = request.args.get('limit', default=100, type=int)
         
-        # Filter exchanges based on parameters
-        if source and target:
-            # Filter by both source and target
-            Exchange = Query()
-            exchanges = exchanges_db.search((Exchange.source_service == source) & 
-                                          (Exchange.target_service == target))
-        elif source:
-            # Filter by source only
-            Exchange = Query()
-            exchanges = exchanges_db.search(Exchange.source_service == source)
-        elif target:
-            # Filter by target only
-            Exchange = Query()
-            exchanges = exchanges_db.search(Exchange.target_service == target)
-        else:
-            # No filters - get all exchanges
-            exchanges = exchanges_db.all()
+#         # Filter exchanges based on parameters
+#         if source and target:
+#             # Filter by both source and target
+#             Exchange = Query()
+#             exchanges = exchanges_db.search((Exchange.source_service == source) & 
+#                                           (Exchange.target_service == target))
+#         elif source:
+#             # Filter by source only
+#             Exchange = Query()
+#             exchanges = exchanges_db.search(Exchange.source_service == source)
+#         elif target:
+#             # Filter by target only
+#             Exchange = Query()
+#             exchanges = exchanges_db.search(Exchange.target_service == target)
+#         else:
+#             # No filters - get all exchanges
+#             exchanges = exchanges_db.all()
         
-        # Sort by timestamp (newest first) and limit results
-        exchanges.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-        exchanges = exchanges[:limit]
+#         # Sort by timestamp (newest first) and limit results
+#         exchanges.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+#         exchanges = exchanges[:limit]
         
-        return jsonify(exchanges)
+#         return jsonify(exchanges)
     
-    except Exception as e:
-        logger.error(f"Error retrieving exchanges: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+#     except Exception as e:
+#         logger.error(f"Error retrieving exchanges: {str(e)}")
+#         return jsonify({'error': str(e)}), 500
 
 @app.route('/reset-db', methods=['GET'])
 def reset_db_endpoint():

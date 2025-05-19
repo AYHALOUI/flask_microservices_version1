@@ -1,5 +1,10 @@
 {
     "id": "hubspot_id",
-    "first_name": "properties.firstname1",
-    "last_name": "properties.lastname1"
+    "last_name": "properties.lastname",
+    "first_name": "properties.firstname",
+    "email": "properties.email",
+    "phone": "properties.phone",
+    "company": "properties.company",
+    "created_at": "properties.created_date",
+    "updated_at": "properties.last_modified_date"
 }
