@@ -123,29 +123,7 @@ services:
       - microservices_network
     restart: unless-stopped
   
-  # flask-api:
-  #   image: python:3.9-slim
-  #   working_dir: /app
-  #   volumes:
-  #     - ./mock-external-apis:/app
-  #   ports:
-  #     - "5000:5000"
-  #   command: >
-  #     bash -c "pip install flask &&
-  #              python app.py"
-  # service_project:
-  #   build: ./service_project
-  #   container_name: service_project
-  #   volumes:
-  #     - ./service_project:/app
-  #     - ./data/project:/app/data
-  #     - ./shared:/app/shared
-  #   ports:
-  #     - "5003:5000"
-  #   networks:
-  #     - microservices_network
-  #   restart: unless-stopped
-  
+ 
 
   service_connect:
     build: ./service_connect
