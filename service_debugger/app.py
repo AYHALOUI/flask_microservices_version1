@@ -506,9 +506,6 @@ def logs_ui():
                 # Skip this log entry and continue with others
                 continue
         
-        # Log how many logs we're showing
-        logger.info(f"Rendering UI with {len(safe_logs)} logs")
-        
         return render_template('logs.html', logs=safe_logs)
     
     except Exception as e:

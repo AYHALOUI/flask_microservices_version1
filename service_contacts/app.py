@@ -197,7 +197,7 @@ def sync_contacts():
         hubspot_response = _send_to_hubspot(transformed_data)
         
         # Log operation metrics
-        _log_operation_metrics("sync_contacts", start_time, len(contacts))
+        # _log_operation_metrics("sync_contacts", start_time, len(contacts))
         
         # Check queue size
         try:
