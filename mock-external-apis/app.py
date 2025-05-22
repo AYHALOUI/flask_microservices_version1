@@ -189,31 +189,62 @@ def update_contact(contact_id):
     return jsonify(updated_contact)
 
 # HubSpot API routes
+# @app.route('/crm/v3/objects/contacts/batch/create', methods=['POST'])
+# def create_hubspot_contacts():
+#     """Create contacts in HubSpot format"""
+#     logger.info('HubSpot API: POST /crm/v3/objects/contacts/batch/create')
+    
+#     # Process the inputs from the request
+#     inputs = request.json.get('inputs', [])
+#     results = []
+    
+#     for i, contact_data in enumerate(inputs):
+#         # Create a result for each input
+#         properties = contact_data.get('properties', {})
+#         result = {
+#             'id': f"1000{i}",
+#             'properties': properties,
+#         }
+#         results.append(result)
+    
+#     return jsonify({
+#         'results': results,
+#         'status': 'success'
+#     })
+
 @app.route('/crm/v3/objects/contacts/batch/create', methods=['POST'])
 def create_hubspot_contacts():
+    logger.info('------------------------------------------- form')
     """Create contacts in HubSpot format"""
-    logger.info('HubSpot API: POST /crm/v3/objects/contacts/batch/create')
-    
-    # Process the inputs from the request
-    inputs = request.json.get('inputs', [])
-    results = []
-    
-    for i, contact_data in enumerate(inputs):
-        # Create a result for each input
-        properties = contact_data.get('properties', {})
-        result = {
-            'id': f"1000{i}",
-            'properties': properties,
-        }
-        results.append(result)
-    
-    return jsonify({
-        'results': results,
-        'status': 'success'
-    })
+    import random
+    failure_type = random.choice(['network_error', 'auth_error', 'rate_limit', 'success'])
+    logger.info(f"------> {failure_type}")
+
+    if failure_type == 'network_error':
+        return jsonify({'error': 'Network timeout'}), 500
+    elif failure_type == 'auth_error':
+        return jsonify({'error': 'Unauthorized'}), 401
+    elif failure_type == 'rate_limit':
+        return jsonify({'error': 'Rate limit exceeded'}), 429
+    else:
+        inputs = request.json.get('inputs', [])
+        results = []
+
+        for i, contact_data in enumerate(inputs):
+            properties = contact_data.get('properties',{})
+            result = {
+                'd': f"1000{i}",
+                'properties': properties,
+            }
+            results.append(result)
+        
+        return ({
+            'results': results,
+            'status': 'success'
+        })
 
 @app.route('/crm/v3/objects/contacts', methods=['GET'])
-def get_hubspot_contacts():
+def get_oggo_contacts():
     """Get contacts in HubSpot format"""
     logger.info('HubSpot API: GET /crm/v3/objects/contacts')
     

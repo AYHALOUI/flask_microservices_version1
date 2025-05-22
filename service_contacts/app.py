@@ -60,7 +60,8 @@ def _fetch_contacts_from_oggo(params):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         contacts = response.json()
-        log_to_debugger("contact", "info", f"Retrieved {len(contacts)} contacts from Oggo", {"count": len(contacts)})
+        # log_to_debugger("contact", "info", f"Retrieved {len(contacts)} contacts from Oggo", {"count": len(contacts)})
+        logger.info(f"-------->ogg--->'{json.dumps(contacts)y}")
         return contacts
     except requests.RequestException as e:
         error_msg = f"Failed to fetch contacts from Oggo: {str(e)}"
@@ -93,39 +94,39 @@ def _transform_contacts(contacts):
         logger.error(error_msg)
         raise Exception(error_msg)
 
-def _send_to_hubspot(transformed_data):
-    """Send transformed contacts to HubSpot via proxy service"""
-    log_to_debugger("contact", "info", "Sending contacts to HubSpot", 
-            {"count": len(transformed_data.get('contacts', []))})
+# def _send_to_hubspot(transformed_data):
+#     """Send transformed contacts to HubSpot via proxy service"""
+#     log_to_debugger("contact", "info", "Sending contacts to HubSpot", 
+#             {"count": len(transformed_data.get('contacts', []))})
     
-    url, headers, payload = _build_hubspot_request(transformed_data)
-    try:
-        response = requests.post(url, headers=headers, json=payload)
+#     url, headers, payload = _build_hubspot_request(transformed_data)
+#     try:
+#         response = requests.post(url, headers=headers, json=payload)
         
-        # Check if response was successful
-        if response.status_code != 200:
-            # Add failed contacts to the queue
-            error_msg = f"HubSpot API error: Status code {response.status_code}"
-            log_to_debugger("contact", "error", error_msg)
-            _queue_failed_items(transformed_data.get('contacts', []), error_msg)
-            return None
+#         # Check if response was successful
+#         if response.status_code != 200:
+#             # Add failed contacts to the queue
+#             error_msg = f"HubSpot API error: Status code {response.status_code}"
+#             log_to_debugger("contact", "error", error_msg)
+#             _queue_failed_items(transformed_data.get('contacts', []), error_msg)
+#             return None
         
-        # Parse the response
-        try:
-            hubspot_response = response.json()
-            log_to_debugger("contact", "info", "Received response from HubSpot")
-            return hubspot_response
-        except json.JSONDecodeError as e:
-            error_msg = f"Failed to parse HubSpot response: {str(e)}"
-            log_to_debugger("contact", "error", error_msg)
-            _queue_failed_items(transformed_data.get('contacts', []), error_msg)
-            return None
+#         # Parse the response
+#         try:
+#             hubspot_response = response.json()
+#             log_to_debugger("contact", "info", "Received response from HubSpot")
+#             return hubspot_response
+#         except json.JSONDecodeError as e:
+#             error_msg = f"Failed to parse HubSpot response: {str(e)}"
+#             log_to_debugger("contact", "error", error_msg)
+#             _queue_failed_items(transformed_data.get('contacts', []), error_msg)
+#             return None
     
-    except requests.RequestException as e:
-        error_msg = f"Failed to sync data to HubSpot: {str(e)}"
-        logger.error(error_msg)
-        _queue_failed_items(transformed_data.get('contacts', []), error_msg)
-        raise Exception(error_msg)
+#     except requests.RequestException as e:
+#         error_msg = f"Failed to sync data to HubSpot: {str(e)}"
+#         logger.error(error_msg)
+#         _queue_failed_items(transformed_data.get('contacts', []), error_msg)
+#         raise Exception(error_msg)
 
 def _queue_failed_items(items, reason):
     """Add failed items to the queue service for later retry"""
@@ -160,13 +161,6 @@ def _validate_request(data):
     # Add any validation logic here
     return data or {}
 
-def _log_operation_metrics(operation, start_time, contacts_count=0):
-    """Log metrics about operations"""
-    duration = time.time() - start_time
-    log_to_debugger("contact", "info", f"{operation} completed", {
-        "duration_ms": int(duration * 1000),
-        "contacts_count": contacts_count
-    })
 
 # ===== Public API Endpoints =====
 
@@ -196,63 +190,107 @@ def sync_contacts():
         # Step 3: Send to HubSpot
         hubspot_response = _send_to_hubspot(transformed_data)
         
-        # Log operation metrics
-        # _log_operation_metrics("sync_contacts", start_time, len(contacts))
-        
-        # Check queue size
-        try:
-            queue_response = requests.get(f"{QUEUE_SERVICE_URL}/stats")
-            queue_stats = queue_response.json() if queue_response.status_code == 200 else {}
-            pending_count = queue_stats.get('by_status', {}).get('pending', 0)
-            
-            # Include queue info in response
-            queue_info = {
-                "pending_items": pending_count,
-                "queue_url": f"{QUEUE_SERVICE_URL}/queue"
-            }
-        except:
-            queue_info = {"error": "Could not fetch queue stats"}
+
         
         return jsonify({
             "status": "success",
             "message": f"Successfully processed {len(contacts)} contacts",
             "data": transformed_data,
             "hubspot_response": hubspot_response,
-            "queue_info": queue_info
         })
     
     except Exception as e:
         return _build_error_response(f"Error in sync: {str(e)}")
 
-@app.route('/retry-failed', methods=['POST'])
-def retry_failed_contacts():
-    """Trigger retry of failed contacts"""
+
+
+    
+def _add_to_queue(contact_data, reason):
+    """add failed contact to the queue for retry"""
     try:
-        # Call the queue service to process retries
-        response = requests.post(f"{QUEUE_SERVICE_URL}/retry")
-        
-        if response.status_code != 200:
-            return _build_error_response(f"Failed to trigger retries: {response.text}")
-            
-        return jsonify(response.json())
+        queue_item = {
+            "id": f"contact_{contact_data.get('hubspot_id', int(time.time()))}",
+            "entity_type": "contact",
+            "data": contact_data,
+            "reason": reason
+        }
+        response = requests.post(f"{QUEUE_SERVICE_URL}/queue", json=queue_item, timeout=5)
+        if response.status_code == 200:
+            logger.info(f"Added contact to queue: {queue_item['id']}")
+            return True
+        else:
+            logger.error(f"Failed to add contact to queue: {response.text}")
+            return False
         
     except Exception as e:
-        return _build_error_response(f"Error triggering retries: {str(e)}")
+        logger.error(f"Error adding contact to queue: {str(e)}")
+        return False
+    
+
+
+
+
+
+def _send_to_hubspot(transformed_data):
+    """Send transformed data to hubspot via connect service"""
+
+    url, headers, payload = _build_hubspot_request(transformed_data)
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code != 200:
+            error_msg = f"HubSpot API error: Status code {response.status_code}"
+            for contact in transformed_data.get('contact', []):
+                _add_to_queue(contact, error_msg)
+            
+            return None
+        # parse the response
+        try:
+            hubspot_response = response.json()
+            return hubspot_response
+        except json.JSONDecodeError as e:
+            error_msg = f"Failed to parse Hubspot response {str(e)}"
+            for contact in transformed_data.get('contact', []):
+                _add_to_queue(contact,  error_msg)
+            return None
+    except Exception as e:
+        error_msg = f"Failed to sync data to hubspot: {str(e)}"
+        for contact in transformed_data.get('contact', []):
+            _add_to_queue(contact,  error_msg)
+            raise Exception(error_msg)
+        
+@app.route('/retry-failed', methods=['POST'])
+def retry_failed_contacts():
+   """Trigger retry of failed contacts from the queue"""
+   try:
+       
+       response = requests.post(f"{QUEUE_SERVICE_URL}/retry-failed", timeout=5)
+       if response.status_code == 200:
+           return jsonify(response.json())
+       else:
+           return jsonify({
+               "error": f"Failed to trigger retries: {response.text}"
+           }), response.status_code
+   except Exception as e:
+       return ({
+           "error": f"Error triggering retries: {str(e)}",
+       }), 500
 
 @app.route('/queue-status', methods=['GET'])
 def queue_status():
-    """Get status of the queue"""
+    """Get status of queue"""
     try:
-        # Get queue statistics
-        response = requests.get(f"{QUEUE_SERVICE_URL}/stats")
-        
-        if response.status_code != 200:
-            return _build_error_response(f"Failed to get queue stats: {response.text}")
-            
-        return jsonify(response.json())
-        
+        response = requests.get(f"{QUEUE_SERVICE_URL}/queue?entity_type=contact", timeout=5)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": f"Failed to ge queue status: {response.text}"
+            }), response.status_code
     except Exception as e:
-        return _build_error_response(f"Error getting queue status: {str(e)}")
+        return ({
+            "error": f"Error getting queue status: {str(e)}"
+        }), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

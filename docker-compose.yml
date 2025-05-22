@@ -175,9 +175,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./mock-external-apis:/app  # For development
-    environment:
-      - FLASK_ENV=development
-      - FLASK_APP=app.py
+
 
   service_mapping:
     build: ./service_mapping

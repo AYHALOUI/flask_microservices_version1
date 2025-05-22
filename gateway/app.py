@@ -73,9 +73,9 @@ def _initialize_services():
         services = _discover_services_via_docker()
         logger.info(f"Discovered services ----------> {services}")
     except Exception as e:
-        log_todebugger("gateway", "error", "Docker service discovery failed", {
-            "error": str(e)
-        })
+        # log_todebugger("gateway", "error", "Docker service discovery failed", {
+        #     "error": str(e)
+        # })
         logger.error(f"Docker service discovery failed: {str(e)}")
     
     # If Docker discovery yielded no results, use env vars
