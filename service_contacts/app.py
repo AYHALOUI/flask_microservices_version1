@@ -54,14 +54,11 @@ def _build_hubspot_request(transformed_data):
 
 def _fetch_contacts_from_oggo(params):
     """Fetch contacts from Oggo via proxy service"""
-    log_to_debugger("contact", "info", "Fetching contacts from Oggo", params)
     url, headers = _build_oggo_request()
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         contacts = response.json()
-        # log_to_debugger("contact", "info", f"Retrieved {len(contacts)} contacts from Oggo", {"count": len(contacts)})
-        logger.info(f"-------->ogg--->'{json.dumps(contacts)y}")
         return contacts
     except requests.RequestException as e:
         error_msg = f"Failed to fetch contacts from Oggo: {str(e)}"
@@ -172,7 +169,6 @@ def health_check():
 @app.route('/sync', methods=['POST'])
 def sync_contacts():
     """Sync contacts from Oggo to HubSpot"""
-    start_time = time.time()
     
     try:
         # Validate request
@@ -181,6 +177,8 @@ def sync_contacts():
         
         # Step 1: Fetch contacts from Oggo
         contacts = _fetch_contacts_from_oggo(params)
+        logger.info(f"contacts is ------> {contacts}")
+        # exit(0)
         if not contacts:
             return jsonify({"message": "No contacts found to sync"}), 200
         
@@ -191,7 +189,7 @@ def sync_contacts():
         hubspot_response = _send_to_hubspot(transformed_data)
         
 
-        
+
         return jsonify({
             "status": "success",
             "message": f"Successfully processed {len(contacts)} contacts",
