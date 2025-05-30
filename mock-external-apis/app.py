@@ -55,7 +55,7 @@ contacts = [
 ]
 
 # Authorization middleware - simplified for initial development
-@app.before_request
+# @app.before_request
 def check_auth():
     """Simple authorization check"""
     # Skip auth for these paths

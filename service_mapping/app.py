@@ -1,54 +1,37 @@
-from flask import Flask, request, jsonify, send_file, make_response
-from tinydb import TinyDB, Query
-import requests
-import os
+from flask import Flask, jsonify, request
 import json
+import os
 import logging
-import io
-import docker
 
 app = Flask(__name__)
+
+# Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = app.logger
+app.logger.setLevel(logging.INFO)
 
-# Simple database for mappings
-os.makedirs('data', exist_ok=True)
-mappings_db = TinyDB('data/mappings.json')
+# API endpoint to get available entity types
+@app.route('/api/entity-types', methods=['GET'])
+def get_entity_types():
+    """Return available entity types for mapping"""
+    try:
+        entity_types = [
+            {"value": "contact", "label": "Contacts"},
+            {"value": "project", "label": "Projects"},
+            {"value": "contract", "label": "Contracts"}
+        ]
+        return jsonify({"entity_types": entity_types})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/mappings/<entity_type>', methods=['GET'])
-def get_mapping(entity_type):
-    """Get mapping for an entity type"""
-    Mapping = Query()
-    mapping = mappings_db.get(Mapping.entity_type == entity_type)
-    
-    if not mapping:
-        return jsonify({"error": "Mapping not found"}), 404
-        
-    return jsonify(mapping)
-
-@app.route('/mappings/<entity_type>', methods=['POST'])
-def save_mapping(entity_type):
-    """Save/update mapping for an entity type to a separate file"""
-    rules = request.json
-    
-    # Create directory if it doesn't exist
-    os.makedirs('mappings', exist_ok=True)
-    
-    # Write the rules to a file
-    mapping_file = f"mappings/{entity_type}_mapping.json"
-    with open(mapping_file, 'w') as f:
-        json.dump(rules, f, indent=2)
-    
-    return jsonify({"status": "success", "file": mapping_file})
-
+# API endpoint to get source fields (from Oggo)
 @app.route('/api/source-fields/<entity_type>', methods=['GET'])
 def get_source_fields(entity_type):
-    """Get source fields for a specific entity type"""
+    """Return available source fields for the given entity type"""
     try:
-        # Define fields for each entity type
-        if entity_type == 'contact':
-            fields = [
-                {"value": "id", "label": "ID"},
+        # Define source fields based on entity type
+        source_fields = {
+            "contact": [
+                {"value": "id", "label": "Contact ID"},
                 {"value": "first_name", "label": "First Name"},
                 {"value": "last_name", "label": "Last Name"},
                 {"value": "email", "label": "Email Address"},
@@ -56,55 +39,40 @@ def get_source_fields(entity_type):
                 {"value": "company", "label": "Company Name"},
                 {"value": "created_at", "label": "Created Date"},
                 {"value": "updated_at", "label": "Updated Date"}
-            ]
-        elif entity_type == 'project':
-            fields = [
-                {"value": "id", "label": "ID"},
+            ],
+            "project": [
+                {"value": "id", "label": "Project ID"},
                 {"value": "name", "label": "Project Name"},
                 {"value": "description", "label": "Description"},
                 {"value": "status", "label": "Status"},
                 {"value": "start_date", "label": "Start Date"},
                 {"value": "end_date", "label": "End Date"},
-                {"value": "budget", "label": "Budget"},
-                {"value": "contact_id", "label": "Contact ID"},
-                {"value": "created_at", "label": "Created Date"},
-                {"value": "updated_at", "label": "Updated Date"}
-            ]
-        elif entity_type == 'contract':
-            fields = [
-                {"value": "id", "label": "ID"},
+                {"value": "budget", "label": "Budget"}
+            ],
+            "contract": [
+                {"value": "id", "label": "Contract ID"},
                 {"value": "title", "label": "Contract Title"},
-                {"value": "description", "label": "Description"},
                 {"value": "value", "label": "Contract Value"},
-                {"value": "start_date", "label": "Start Date"},
-                {"value": "end_date", "label": "End Date"},
                 {"value": "status", "label": "Status"},
-                {"value": "project_id", "label": "Project ID"},
-                {"value": "contact_id", "label": "Contact ID"},
-                {"value": "created_at", "label": "Created Date"},
-                {"value": "updated_at", "label": "Updated Date"}
+                {"value": "start_date", "label": "Start Date"},
+                {"value": "end_date", "label": "End Date"}
             ]
-        else:
-            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
-            
+        }
+        
+        fields = source_fields.get(entity_type, [])
         return jsonify({"fields": fields})
-        
     except Exception as e:
-        logger.error(f"Error getting source fields: {str(e)}")
-        return jsonify({"error": f"Error getting source fields: {str(e)}"}), 500
-        
-    except Exception as e:
-        logger.error(f"Error in get_source_fields: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+# API endpoint to get target fields (HubSpot)
 @app.route('/api/target-fields/<entity_type>', methods=['GET'])
 def get_target_fields(entity_type):
-    """Get target fields for a specific entity type"""
+    """Return available target fields for the given entity type"""
     try:
-        # Define target fields for each entity type
-        if entity_type == 'contact':
-            fields = [
-                {"value": "hubspot_id", "label": "HubSpot ID"},
+        # Define target fields based on entity type
+        target_fields = {
+            "contact": [
+                {"value": "hubspot_id", "label": "HubSpot Contact ID"},
                 {"value": "properties.firstname", "label": "First Name"},
                 {"value": "properties.lastname", "label": "Last Name"},
                 {"value": "properties.email", "label": "Email"},
@@ -113,154 +81,148 @@ def get_target_fields(entity_type):
                 {"value": "properties.created_date", "label": "Created Date"},
                 {"value": "properties.last_modified_date", "label": "Last Modified Date"},
                 {"value": "properties.jobtitle", "label": "Job Title"},
-                {"value": "properties.address", "label": "Address"},
-                {"value": "properties.city", "label": "City"},
-                {"value": "properties.state", "label": "State"},
-                {"value": "properties.zip", "label": "Zip Code"},
-                {"value": "properties.country", "label": "Country"},
-                {"value": "properties.leadsource", "label": "Lead Source"},
-                {"value": "properties.firstname1", "label": "First Name (Custom)"},
-                {"value": "properties.lastname1", "label": "Last Name (Custom)"}
-            ]
-        elif entity_type == 'project':
-            fields = [
-                {"value": "hubspot_id", "label": "HubSpot ID"},
+                {"value": "properties.website", "label": "Website"}
+            ],
+            "project": [
+                {"value": "hubspot_id", "label": "HubSpot Project ID"},
                 {"value": "properties.name", "label": "Project Name"},
                 {"value": "properties.description", "label": "Description"},
-                {"value": "properties.hs_pipeline_stage", "label": "Status"},
+                {"value": "properties.hs_pipeline_stage", "label": "Pipeline Stage"},
                 {"value": "properties.start_date", "label": "Start Date"},
                 {"value": "properties.end_date", "label": "End Date"},
-                {"value": "properties.amount", "label": "Budget"},
-                {"value": "properties.contact_id", "label": "Contact ID"},
-                {"value": "properties.createdate", "label": "Created Date"},
-                {"value": "properties.hs_lastmodifieddate", "label": "Last Modified Date"}
-            ]
-        elif entity_type == 'contract':
-            fields = [
-                {"value": "hubspot_id", "label": "HubSpot ID"},
-                {"value": "properties.contract_name", "label": "Contract Title"},
-                {"value": "properties.description", "label": "Description"},
+                {"value": "properties.budget", "label": "Budget"}
+            ],
+            "contract": [
+                {"value": "hubspot_id", "label": "HubSpot Contract ID"},
+                {"value": "properties.contract_name", "label": "Contract Name"},
                 {"value": "properties.contract_value", "label": "Contract Value"},
-                {"value": "properties.start_date", "label": "Start Date"},
-                {"value": "properties.end_date", "label": "End Date"},
                 {"value": "properties.status", "label": "Status"},
-                {"value": "properties.project_id", "label": "Project ID"},
-                {"value": "properties.contact_id", "label": "Contact ID"},
-                {"value": "properties.createdate", "label": "Created Date"},
-                {"value": "properties.hs_lastmodifieddate", "label": "Last Modified Date"}
+                {"value": "properties.start_date", "label": "Start Date"},
+                {"value": "properties.end_date", "label": "End Date"}
             ]
-        else:
-            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
-            
+        }
+        
+        fields = target_fields.get(entity_type, [])
         return jsonify({"fields": fields})
-        
     except Exception as e:
-        logger.error(f"Error getting target fields: {str(e)}")
-        return jsonify({"error": f"Error getting target fields: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
+def get_service_mapping_directory(entity_type):
+    """Get the correct service directory path for an entity type"""
+    service_directories = {
+        "contact": "../service_contacts/mappings",
+        "project": "../service_projects/mappings",
+        "contract": "../service_contracts/mappings"
+    }
+    return service_directories.get(entity_type)
 
-def transform_item(item, mapping_rules, entity_type):
-    """Transform a single item using the mapping rules"""
-    result = {}
-    
-    # Default hubspot_id for contacts
-    if entity_type == 'contact':
-        result['hubspot_id'] = None
-    
-    # Apply mapping rules
-    for source_field, target_field in mapping_rules.items():
-        if source_field in item:
-            # Handle nested properties
-            if '.' in target_field:
-                parts = target_field.split('.')
-                parent = parts[0]
-                child = parts[1]
-                
-                if parent not in result:
-                    result[parent] = {}
-                result[parent][child] = item[source_field]
-            else:
-                # Direct field mapping
-                result[target_field] = item[source_field]
-    
-    # Package according to entity type
-    if entity_type == 'contact':
-        return {"contacts": [result]}
-    else:
-        return {f"{entity_type}s": [result]}
-
-@app.route('/')
-def index():
-    return open('index.html').read()
-
-@app.route('/api/entity-types', methods=['GET'])
-def get_entity_types():
-    """Get available entity types from Docker services"""
+# API endpoint to get existing mappings
+@app.route('/mappings/<entity_type>', methods=['GET'])
+def get_mapping(entity_type):
+    """Get existing mapping for an entity type"""
     try:
+        # Get the appropriate service directory
+        service_mapping_dir = get_service_mapping_directory(entity_type)
+        if not service_mapping_dir:
+            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
         
-        # Mapping of service names to entity types
-        service_mapping = {
-            'service_contacts': 'contact',
-            'service_projects': 'project', 
-            'service_contracts': 'contract',
-            'contacts': 'contact',
-            'projects': 'project',
-            'contracts': 'contract'
-        }
+        # Look for mapping file in the service directory
+        mapping_file = f"{service_mapping_dir}/{entity_type}_mapping.json"
         
-        # Labels for entity types
-        labels = {
-            'contact': 'Contacts',
-            'project': 'Projects',
-            'contract': 'Contracts'
-        }
+        print(f"Looking for mapping file at: {mapping_file}")  # Debug log
+        print(f"File exists: {os.path.exists(mapping_file)}")  # Debug log
         
-        # Try to discover services from Docker
-        logger.info("Initializing Docker client")
-        try:
-            client = docker.from_env()
-        except Exception as e:
-            logger.error(f"Failed to connect to Docker: {str(e)}")
-            return jsonify({"error": f"Failed to connect to Docker: {str(e)}"}), 500
-        
-        logger.info("Listing containers")
-        try:
-            containers = client.containers.list()
-            logger.info(f"Found {len(containers)} containers")
-        except Exception as e:
-            logger.error(f"Failed to list containers: {str(e)}")
-            return jsonify({"error": f"Failed to list containers: {str(e)}"}), 500
-        
-        found_types = set()
-        
-        for container in containers:
-            container_name = container.name
-            service_name = container.labels.get('com.docker.compose.service', '')
-            logger.info(f"Container: {container_name}, Service: {service_name}")
-            
-            if service_name in service_mapping:
-                entity_type = service_mapping[service_name]
-                found_types.add(entity_type)
-                logger.info(f"Found entity type: {entity_type}")
-        
-        # If we found services, create entity types
-        if found_types:
-            logger.info(f"Returning {len(found_types)} found entity types")
-            return jsonify({
-                "entity_types": [
-                    {"value": entity_type, "label": labels[entity_type]} 
-                    for entity_type in found_types
-                ]
-            })
-        
-        # If no types found, return error
-        logger.error("No entity types found in Docker services")
-        return jsonify({"error": "No entity types found in Docker services"}), 404
-        
+        if os.path.exists(mapping_file):
+            with open(mapping_file, 'r') as f:
+                mapping_data = json.load(f)
+            return jsonify({"rules": mapping_data})
+        else:
+            return jsonify({"error": f"No mapping found for {entity_type} at {mapping_file}"}), 404
     except Exception as e:
-        # Log error and return the error
-        logger.error(f"Error getting entity types: {str(e)}")
-        return jsonify({"error": f"Error getting entity types: {str(e)}"}), 500
+        print(f"Error in get_mapping: {str(e)}")  # Debug log
+        return jsonify({"error": str(e)}), 500
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+# API endpoint to save mappings
+@app.route('/mappings/<entity_type>', methods=['POST'])
+def save_mapping(entity_type):
+    """Save mapping for an entity type"""
+    app.logger.info(f"=== SAVE MAPPING CALLED FOR {entity_type} ===")
+    
+    try:
+        mapping_data = request.json
+        app.logger.info(f"Received mapping data: {mapping_data}")
+        
+        if not mapping_data:
+            app.logger.error("No mapping data received!")
+            return jsonify({"error": "No mapping data provided"}), 400
+        
+        # Get the appropriate service directory
+        service_mapping_dir = get_service_mapping_directory(entity_type)
+        app.logger.info(f"Service mapping directory: {service_mapping_dir}")
+        
+        if not service_mapping_dir:
+            app.logger.error(f"Unknown entity type: {entity_type}")
+            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
+        
+        # Get current working directory
+        current_dir = os.getcwd()
+        app.logger.info(f"Current working directory: {current_dir}")
+        
+        # Create absolute path
+        abs_service_dir = os.path.abspath(service_mapping_dir)
+        app.logger.info(f"Absolute service directory: {abs_service_dir}")
+        
+        # Ensure the service mappings directory exists
+        app.logger.info(f"Creating directory: {abs_service_dir}")
+        os.makedirs(abs_service_dir, exist_ok=True)
+        
+        # Save mapping file with the correct naming pattern
+        mapping_file = f"{abs_service_dir}/{entity_type}_mapping.json"
+        app.logger.info(f"Full mapping file path: {mapping_file}")
+        
+        # Write the file
+        with open(mapping_file, 'w') as f:
+            json.dump(mapping_data, f, indent=2)
+        
+        # Verify the file was created
+        file_exists = os.path.exists(mapping_file)
+        app.logger.info(f"File created successfully: {file_exists}")
+        
+        if file_exists:
+            # Get file size to confirm it has content
+            file_size = os.path.getsize(mapping_file)
+            app.logger.info(f"File size: {file_size} bytes")
+        
+        app.logger.info("=== SAVE MAPPING COMPLETED ===")
+        
+        return jsonify({
+            "status": "success", 
+            "message": f"Mapping saved for {entity_type}",
+            "file_path": mapping_file,
+            "file_exists": file_exists,
+            "debug_info": {
+                "current_dir": current_dir,
+                "service_dir": service_mapping_dir,
+                "absolute_path": mapping_file
+            }
+        })
+    except Exception as e:
+        app.logger.error(f"ERROR in save_mapping: {str(e)}")
+        app.logger.error(f"Exception type: {type(e)}")
+        return jsonify({"error": str(e)}), 500
+
+# API endpoint to serve the HTML interface
+@app.route('/', methods=['GET'])
+def mapping_interface():
+    """Serve the mapping interface"""
+    try:
+        with open('index.html', 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "index.html not found", 404
+
+if __name__ == '__main__':
+    print("Starting mapping service...")
+    print("Current working directory:", os.getcwd())
+    print("Available services:", ["contact", "project", "contract"])
+    app.run(host='0.0.0.0', port=5000, debug=True)

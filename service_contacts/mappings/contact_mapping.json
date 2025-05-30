@@ -1,0 +1,8 @@
+{
+  "id": "hubspot_id",
+  "first_name": "properties.firstname",
+  "last_name": "properties.lastname",
+  "email": "properties.email",
+  "phone": "properties.phone",
+  "company": "properties.company"
+}

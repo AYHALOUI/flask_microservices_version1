@@ -29,13 +29,13 @@ services:
     build: ./service_contacts
     container_name: service_contacts
     environment:
-      - TRANSFORM_SERVICE_URL=http://service_transformer:5000
-      - service_connect=http://service_connect:5000
+      - SERVICE_TRANSFORM=http://service_transformer:5000
+      - SERVICE_CONNECT=http://service_connect:5000
       - QUEUE_SERVICE_URL=http://service_queue:5000
     volumes:
       - ./service_contacts:/app
-      - ./data/contacts:/app/data
-      - ./shared:/app/shared
+      # - ./data/contacts:/app/data
+      # - ./shared:/app/shared
     ports:
       - "5001:5000"
     networks:
@@ -184,8 +184,9 @@ services:
       - SERVICE_CONNECT=http://service_connect:5000
     volumes:
       - ./service_mapping:/app
-      - ./data/mapping:/app/data
-      - ./shared:/app/shared
+      - ./service_contacts:/service_contacts     # ← This maps the host folder to container
+      - ./service_project:/service_project       # ← This too
+      - ./service_contracts:/service_contracts   # ← This too
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "5004:5000"

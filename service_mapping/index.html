@@ -266,15 +266,7 @@
                 });
         }
 
-        // Function to add fallback entity types if API fails
-        // function addFallbackEntityTypes() {
-        //     const entityTypeSelect = document.getElementById('entity-type');
-        //     entityTypeSelect.innerHTML = `
-        //         <option value="contact">Contacts</option>
-        //         <option value="project">Projects</option>
-        //         <option value="contract">Contracts</option>
-        //     `;
-        // }
+
 
         // Function to load source fields dynamically from the API
         function loadFieldOptions() {
@@ -408,67 +400,80 @@
             }
         }
 
-        // Function to load existing mappings
         function loadMapping() {
             const entityType = document.getElementById('entity-type').value;
             
+            if (!entityType) {
+                alert('Please select an entity type first');
+                return;
+            }
+            
             fetch(`/mappings/${entityType}`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log(`Response status: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    // Clear existing rules
+                    console.log('Received mapping data:', data);
+                    
+                    // Clear existing rules first
                     document.getElementById('mapping-rules').innerHTML = '';
                     
                     if (data.error) {
-                        // Add default mappings if none exist
-                        addDefaultMappings(entityType);
+                        console.warn(`No existing mapping found for ${entityType}: ${data.error}`);
+                        alert(`No existing mapping found for ${entityType}. Please create and save a mapping first.`);
                         return;
                     }
                     
-                    // Add rules from data
+                    // Check if we have rules in the response
                     const rules = data.rules || {};
-                    for (const [source, target] of Object.entries(rules)) {
-                        addRule(source, target);
+                    console.log('Mapping rules:', rules);
+                    
+                    if (Object.keys(rules).length === 0) {
+                        console.warn(`No mapping rules found for ${entityType}`);
+                        alert(`No mapping rules found for ${entityType}. The mapping file exists but is empty.`);
+                        return;
                     }
+                    
+                    // Add rules from the loaded data
+                    let rulesCount = 0;
+                    for (const [source, target] of Object.entries(rules)) {
+                        console.log(`Adding rule: ${source} -> ${target}`);
+                        addRule(source, target);
+                        rulesCount++;
+                    }
+                    
+                    console.log(`Successfully loaded ${rulesCount} mapping rules for ${entityType}`);
+                    alert(`✅ Successfully loaded ${rulesCount} existing mappings for ${entityType}`);
                 })
                 .catch(err => {
                     console.error("Error loading mappings:", err);
-                    // Add default mappings on error
-                    addDefaultMappings(entityType);
+                    alert(`❌ Could not load mappings for ${entityType}: ${err.message}\n\nPlease make sure the mapping file exists or create a new mapping.`);
+                    
+                    // Clear any existing rules since we couldn't load
+                    document.getElementById('mapping-rules').innerHTML = '';
                 });
-        }
-
-        // Function to add default mappings based on entity type
-        function addDefaultMappings(entityType) {
-            // Clear existing rules
-            document.getElementById('mapping-rules').innerHTML = '';
-            
-            // Add default mappings based on entity type
-            if (entityType === 'contact') {
-                addRule('id', 'hubspot_id');
-                addRule('first_name', 'properties.firstname1');
-                addRule('last_name', 'properties.lastname1');
-                addRule('email', 'properties.email');
-                addRule('phone', 'properties.phone');
-            } else if (entityType === 'deal' || entityType === 'project') {
-                addRule('id', 'hubspot_id');
-                addRule('name', 'properties.dealname');
-                addRule('description', 'properties.description');
-                addRule('amount', 'properties.amount');
-                addRule('status', 'properties.hs_pipeline_stage');
-            } else if (entityType === 'company' || entityType === 'contract') {
-                addRule('id', 'hubspot_id');
-                addRule('name', 'properties.name');
-                addRule('title', 'properties.contract_name');
-                addRule('value', 'properties.contract_value');
-                addRule('status', 'properties.status');
             }
-        }
 
-        // Function to save mappings
+
+
+       
+
+        // Enhanced save function with better feedback
         function saveMapping() {
             const entityType = document.getElementById('entity-type').value;
+            
+            if (!entityType) {
+                alert('Please select an entity type first');
+                return;
+            }
+            
             const rules = {};
             let isValid = true;
+            let rulesCount = 0;
             
             // Collect all rules and validate
             document.querySelectorAll('.mapping-rule').forEach(rule => {
@@ -482,9 +487,17 @@
                 }
                 
                 rules[sourceField] = targetField;
+                rulesCount++;
             });
             
             if (!isValid) return;
+            
+            if (rulesCount === 0) {
+                alert('Please add at least one mapping rule before saving.');
+                return;
+            }
+            
+            console.log(`Saving ${rulesCount} mapping rules for ${entityType}:`, rules);
             
             // Save the mapping
             fetch(`/mappings/${entityType}`, {
@@ -494,122 +507,21 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert('✅ Settings saved successfully!');
+                console.log('Save response:', data);
+                if (data.status === 'success') {
+                    alert(`✅ Successfully saved ${rulesCount} mapping rules for ${entityType}!`);
+                } else {
+                    alert(`Error saving: ${data.error || 'Unknown error'}`);
+                }
             })
             .catch(err => {
                 console.error("Error saving mappings:", err);
-                alert('Error saving: ' + err);
+                alert('Error saving: ' + err.message);
             });
         }
 
-        // Function to export mappings
-        function exportMapping() {
-            const entityType = document.getElementById('entity-type').value;
-            
-            // Collect the current rules
-            const rules = {};
-            document.querySelectorAll('.mapping-rule').forEach(rule => {
-                const sourceField = rule.querySelector('.source-field').value;
-                const targetField = rule.querySelector('.target-field').value;
-                
-                if (sourceField && targetField) {
-                    rules[sourceField] = targetField;
-                }
-            });
-            
-            // Create a JSON file and trigger download
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rules, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `${entityType}_mapping.json`);
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        }
+        
 
-        // Function to test mapping with sample data
-        function testMapping() {
-            const entityType = document.getElementById('entity-type').value;
-            const rules = {};
-            
-            // Collect all rules
-            document.querySelectorAll('.mapping-rule').forEach(rule => {
-                const sourceField = rule.querySelector('.source-field').value;
-                const targetField = rule.querySelector('.target-field').value;
-                
-                if (sourceField && targetField) {
-                    rules[sourceField] = targetField;
-                }
-            });
-            
-            // Send to API for testing
-            fetch(`/test-mapping/${entityType}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(rules)
-            })
-            .then(response => response.json())
-            .then(data => {
-                const resultsDiv = document.getElementById('test-results');
-                resultsDiv.style.display = 'block';
-                
-                if (data.sample_output) {
-                    resultsDiv.innerHTML = `
-                        <div class="alert alert-success">
-                            <h4>Sample Output:</h4>
-                            <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">${JSON.stringify(data.sample_output, null, 2)}</pre>
-                        </div>
-                    `;
-                } else if (data.error) {
-                    resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-                }
-            })
-            .catch(err => {
-                console.error("Error testing mapping:", err);
-                document.getElementById('test-results').innerHTML = `
-                    <div class="alert alert-danger">
-                        Error testing mapping: ${err.message}
-                    </div>
-                `;
-                document.getElementById('test-results').style.display = 'block';
-            });
-        }
-
-        // Handle file upload for import
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            // Read the file
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const rules = JSON.parse(e.target.result);
-                    
-                    // Clear existing rules
-                    document.getElementById('mapping-rules').innerHTML = '';
-                    
-                    // Add rules from imported file
-                    for (const [source, target] of Object.entries(rules)) {
-                        addRule(source, target);
-                    }
-                    
-                    alert('✅ Settings imported successfully!');
-                } catch (error) {
-                    console.error("Error parsing import file:", error);
-                    alert('Error importing: Invalid JSON file');
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        // Update when entity type changes
-        document.getElementById('entity-type').addEventListener('change', function() {
-            // Clear mapping rules when entity type changes
-            document.getElementById('mapping-rules').innerHTML = '';
-            // Load new field options for the selected entity type
-            loadFieldOptions();
-        });
 
         // Initialize when page loads
         window.onload = function() {
