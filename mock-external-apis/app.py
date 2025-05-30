@@ -54,41 +54,43 @@ contacts = [
     }
 ]
 
-# Authorization middleware - simplified for initial development
+# Mock data - projects
+projects = [
+    {
+        'id': 'proj_1',
+        'name': 'Website Redesign',
+        'description': 'Complete website redesign for Q2',
+        'status': 'in_progress',
+        'start_date': '2023-01-15',
+        'end_date': '2023-06-30',
+        'budget': 50000
+    },
+    {
+        'id': 'proj_2', 
+        'name': 'Mobile App Development',
+        'description': 'New mobile app for customer portal',
+        'status': 'planning',
+        'start_date': '2023-03-01',
+        'end_date': '2023-12-31',
+        'budget': 120000
+    },
+    {
+        'id': 'proj_3',
+        'name': 'Database Migration',
+        'description': 'Migrate legacy database to cloud',
+        'status': 'completed',
+        'start_date': '2022-09-01',
+        'end_date': '2023-02-28',
+        'budget': 75000
+    }
+]
+
+# Authorization middleware - commented out for development
 # @app.before_request
-def check_auth():
-    """Simple authorization check"""
-    # Skip auth for these paths
-    if request.path in ['/health', '/oauth/request_token', '/oauth/authorize', '/oauth/access_token']:
-        return None
-    
-    # Check for OAuth token in header
-    auth_header = request.headers.get('Authorization', '')
-    if auth_header.startswith('OAuth '):
-        # Very simple token check without signature verification for now
-        # Just check if any token in the header exists in our store
-        for token in oauth_tokens['access_tokens']:
-            if token in auth_header:
-                logger.info(f"Authenticated with OAuth token: {token}")
-                return None
-    
-    # Check Bearer token for compatibility with Node.js version
-    auth_header = request.headers.get('Authorization', '')
-    if auth_header.startswith('Bearer '):
-        token = auth_header[7:].strip()
-        if API_KEYS.get(token) == 'valid':
-            logger.info(f"Authenticated with Bearer token: {token}")
-            return None
-    
-    # Check API key as fallback
-    api_key = request.headers.get('X-Api-Key', '')
-    if API_KEYS.get(api_key) == 'valid':
-        logger.info(f"Authenticated with API key: {api_key}")
-        return None
-    
-    # If no valid authentication found
-    logger.warning(f"Unauthorized request to {request.path}")
-    return jsonify({'error': 'Unauthorized'}), 401
+# def check_auth():
+#     """Simple authorization check"""
+#     # Skip auth for development
+#     pass
 
 # OAuth endpoints
 @app.route('/oauth/request_token', methods=['POST'])
@@ -146,7 +148,9 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'ok', 'service': 'mock-external-apis'})
 
-# Oggo API routes
+# ===== OGGO API ROUTES =====
+
+# Contacts endpoints
 @app.route('/contacts', methods=['GET'])
 def get_contacts():
     """Get all contacts"""
@@ -188,60 +192,117 @@ def update_contact(contact_id):
     
     return jsonify(updated_contact)
 
-# HubSpot API routes
-# @app.route('/crm/v3/objects/contacts/batch/create', methods=['POST'])
-# def create_hubspot_contacts():
-#     """Create contacts in HubSpot format"""
-#     logger.info('HubSpot API: POST /crm/v3/objects/contacts/batch/create')
-    
-#     # Process the inputs from the request
-#     inputs = request.json.get('inputs', [])
-#     results = []
-    
-#     for i, contact_data in enumerate(inputs):
-#         # Create a result for each input
-#         properties = contact_data.get('properties', {})
-#         result = {
-#             'id': f"1000{i}",
-#             'properties': properties,
-#         }
-#         results.append(result)
-    
-#     return jsonify({
-#         'results': results,
-#         'status': 'success'
-#     })
+# Projects endpoints
+@app.route('/projects', methods=['GET'])
+def get_projects():
+    """Get all projects"""
+    logger.info('Oggo API: GET /projects')
+    return jsonify(projects)
 
+@app.route('/projects', methods=['POST'])
+def create_project():
+    """Create a new project"""
+    logger.info('Oggo API: POST /projects')
+    new_project = request.json
+    new_project['id'] = f"proj_{len(projects) + 1}"
+    new_project['created_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+    new_project['updated_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+    projects.append(new_project)
+    return jsonify(new_project), 201
+
+@app.route('/projects/<project_id>', methods=['GET'])
+def get_project(project_id):
+    """Get a specific project by ID"""
+    project = next((p for p in projects if p['id'] == project_id), None)
+    if project:
+        return jsonify(project)
+    else:
+        return jsonify({'error': 'Project not found'}), 404
+
+@app.route('/projects/<project_id>', methods=['PUT'])
+def update_project(project_id):
+    """Update an existing project"""
+    logger.info(f'Oggo API: PUT /projects/{project_id}')
+    project_index = next((i for i, p in enumerate(projects) if p['id'] == project_id), None)
+    
+    if project_index is None:
+        return jsonify({'error': 'Project not found'}), 404
+        
+    # Update project
+    updated_data = request.json
+    updated_project = {**projects[project_index], **updated_data}
+    updated_project['updated_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+    projects[project_index] = updated_project
+    
+    return jsonify(updated_project)
+
+# ===== HUBSPOT API ROUTES =====
+
+# Contacts (HubSpot format)
 @app.route('/crm/v3/objects/contacts/batch/create', methods=['POST'])
 def create_hubspot_contacts():
-    logger.info('------------------------------------------- form')
     """Create contacts in HubSpot format"""
-    import random
-    failure_type = random.choice(['network_error', 'auth_error', 'rate_limit', 'success'])
-    logger.info(f"------> {failure_type}")
-
-    if failure_type == 'network_error':
-        return jsonify({'error': 'Network timeout'}), 500
-    elif failure_type == 'auth_error':
-        return jsonify({'error': 'Unauthorized'}), 401
-    elif failure_type == 'rate_limit':
-        return jsonify({'error': 'Rate limit exceeded'}), 429
-    else:
+    logger.info('HubSpot API: POST /crm/v3/objects/contacts/batch/create')
+    
+    try:
+        # Get the input data
         inputs = request.json.get('inputs', [])
         results = []
 
+        # Process each contact
         for i, contact_data in enumerate(inputs):
-            properties = contact_data.get('properties',{})
+            properties = contact_data.get('properties', {})
             result = {
-                'd': f"1000{i}",
+                'id': f"1000{i}",
                 'properties': properties,
+                'createdAt': '2025-01-30T10:00:00.000Z',
+                'updatedAt': '2025-01-30T10:00:00.000Z'
             }
             results.append(result)
         
-        return ({
+        logger.info(f"✅ Successfully created {len(results)} contacts in HubSpot")
+        
+        return jsonify({
             'results': results,
-            'status': 'success'
+            'status': 'COMPLETE'
         })
+        
+    except Exception as e:
+        logger.error(f"Error in HubSpot contacts mock: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Deals (Projects in HubSpot format)
+@app.route('/crm/v3/objects/deals/batch/create', methods=['POST'])
+def create_hubspot_deals():
+    """Create deals (projects) in HubSpot format"""
+    logger.info('HubSpot API: POST /crm/v3/objects/deals/batch/create')
+    
+    try:
+        # Get the input data
+        inputs = request.json.get('inputs', [])
+        results = []
+
+        # Process each project/deal
+        for i, deal_data in enumerate(inputs):
+            properties = deal_data.get('properties', {})
+            result = {
+                'id': f"2000{i}",  # Deal IDs start with 2000
+                'properties': properties,
+                'createdAt': '2025-01-30T10:00:00.000Z',
+                'updatedAt': '2025-01-30T10:00:00.000Z'
+            }
+            results.append(result)
+        
+        logger.info(f"✅ Successfully created {len(results)} deals in HubSpot")
+        
+        return jsonify({
+            'results': results,
+            'status': 'COMPLETE'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in HubSpot deals mock: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/crm/v3/objects/contacts', methods=['GET'])
 def get_oggo_contacts():
@@ -286,8 +347,13 @@ if __name__ == '__main__':
     logger.info('  - POST /contacts')
     logger.info('  - GET /contacts/<id>')
     logger.info('  - PUT /contacts/<id>')
+    logger.info('  - GET /projects')
+    logger.info('  - POST /projects')
+    logger.info('  - GET /projects/<id>')
+    logger.info('  - PUT /projects/<id>')
     logger.info('  - GET /crm/v3/objects/contacts')
     logger.info('  - POST /crm/v3/objects/contacts/batch/create')
+    logger.info('  - POST /crm/v3/objects/deals/batch/create')
     logger.info('  - POST /oauth/request_token')
     logger.info('  - GET /oauth/authorize')
     logger.info('  - POST /oauth/access_token')

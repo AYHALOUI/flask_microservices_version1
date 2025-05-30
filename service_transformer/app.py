@@ -6,14 +6,82 @@ import time
 import requests
 from shared.debugger_client import log_to_debugger, record_exchange
 
-
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-MAPPING_DIR = os.environ.get('MAPPING_DIR', '/mappings')
-os.makedirs(MAPPING_DIR, exist_ok=True)
 
-
+@app.route('/debug', methods=['GET'])
+def debug_mappings():
+    """Debug endpoint to check what mapping files are accessible"""
+    debug_info = {
+        "container_working_directory": os.getcwd(),
+        "container_root_contents": [],
+        "mapping_locations": {},
+        "environment_variables": dict(os.environ)
+    }
+    
+    try:
+        # Check container root
+        debug_info["container_root_contents"] = os.listdir('/')
+        
+        # Check different possible locations
+        possible_locations = [
+            '/app/mappings',
+            '/app/mappings/contacts',
+            '/service_contacts',
+            '/service_contacts/mappings', 
+            './service_contacts/mappings',
+            '../service_contacts/mappings'
+        ]
+        
+        for location in possible_locations:
+            try:
+                if os.path.exists(location):
+                    debug_info["mapping_locations"][location] = {
+                        "exists": True,
+                        "is_directory": os.path.isdir(location),
+                        "contents": os.listdir(location) if os.path.isdir(location) else "Not a directory"
+                    }
+                else:
+                    debug_info["mapping_locations"][location] = {"exists": False}
+            except Exception as e:
+                debug_info["mapping_locations"][location] = {"error": str(e)}
+        
+        # Try to read contact mapping from different locations
+        contact_mapping_attempts = []
+        for location in [
+            '/service_contacts/mappings/contact_mapping.json',
+            '/app/mappings/contacts/contact_mapping.json',
+            '/app/mappings/contact_mapping.json'
+        ]:
+            try:
+                if os.path.exists(location):
+                    with open(location, 'r') as f:
+                        content = json.load(f)
+                    contact_mapping_attempts.append({
+                        "location": location,
+                        "success": True,
+                        "content": content
+                    })
+                else:
+                    contact_mapping_attempts.append({
+                        "location": location,
+                        "success": False,
+                        "reason": "File does not exist"
+                    })
+            except Exception as e:
+                contact_mapping_attempts.append({
+                    "location": location,
+                    "success": False,
+                    "reason": str(e)
+                })
+        
+        debug_info["contact_mapping_attempts"] = contact_mapping_attempts
+        
+    except Exception as e:
+        debug_info["error"] = str(e)
+    
+    return jsonify(debug_info)
 
 def get_mapping_from_service(entity_type):
     """Get mapping from the mapping service"""
@@ -29,6 +97,30 @@ def get_mapping_from_service(entity_type):
         logger.error(f"Error fetching mapping from service: {str(e)}")
         return {}
 
+def get_mapping_from_file(entity_type):
+    """Try multiple locations to find mapping file"""
+    possible_paths = [
+        f'/service_contacts/mappings/{entity_type}_mapping.json',
+        f'/app/mappings/contacts/{entity_type}_mapping.json', 
+        f'/app/mappings/{entity_type}_mapping.json'
+    ]
+    
+    for mapping_path in possible_paths:
+        try:
+            logger.info(f"Trying to load mapping from: {mapping_path}")
+            if os.path.exists(mapping_path):
+                with open(mapping_path, 'r') as f:
+                    mapping_rules = json.load(f)
+                logger.info(f"✅ Successfully loaded mapping from {mapping_path}")
+                return mapping_rules
+            else:
+                logger.info(f"❌ File not found: {mapping_path}")
+        except Exception as e:
+            logger.error(f"❌ Error reading {mapping_path}: {str(e)}")
+    
+    logger.error(f"❌ Could not find mapping file for {entity_type} in any location")
+    return {}
+
 @app.route('/transform', methods=['POST'])
 def transform_data():
     try:
@@ -41,11 +133,24 @@ def transform_data():
         data = request_data.get('data', [])
         entity_type = request_data.get('entity_type', '')
         
-        # Get mapping rules from the mapping service
-        mapping_rules = get_mapping_from_service(entity_type)
+        logger.info(f"=== TRANSFORM REQUEST ===")
+        logger.info(f"Entity type: {entity_type}")
+        logger.info(f"Data count: {len(data)}")
+        
+        if not entity_type:
+            return jsonify({"error": "entity_type is required"}), 400
+        
+        # Try to get mapping from file first, then from service
+        mapping_rules = get_mapping_from_file(entity_type)
         
         if not mapping_rules:
-            return jsonify({"error": f"No mapping rules found for entity type: {entity_type}"}), 404
+            logger.warning(f"No mapping found in files for {entity_type}, trying mapping service...")
+            mapping_rules = get_mapping_from_service(entity_type)
+        
+        if not mapping_rules:
+            error_msg = f"No mapping rules found for entity type: {entity_type}"
+            logger.error(error_msg)
+            return jsonify({"error": error_msg}), 404
             
         # Transform the data
         transformed_data = transform_using_mapping(data, mapping_rules, entity_type)   
@@ -53,39 +158,8 @@ def transform_data():
         return jsonify(transformed_data)
     
     except Exception as e:
+        logger.error(f"Error in transform: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-# @app.route('/transform', methods=['POST'])
-# def transform_data():
-#     try:
-#         request_data = request.json
-#         if not request_data:
-#             return jsonify({"error": "No data provided"}), 400
-        
-#         # Extract parameters
-#         data = request_data.get('data', [])
-#         entity_type = request_data.get('entity_type', '')
-#         mapping_file = request_data.get('mapping_file', '')
-#         mapping_path = os.path.join(MAPPING_DIR, mapping_file)
-
-#         print(f"----> Looking for mapping file at: {mapping_path}")
-#         print(f"----> Directory contents: {os.listdir(MAPPING_DIR)}")
-
-#         if not os.path.exists(mapping_path):
-#             return jsonify({"error": f"Mapping file '{mapping_file}' not found"}), 404
-
-#         try:
-#             with open(mapping_path, 'r') as f:
-#                 mapping_rules = json.load(f)
-#         except Exception as e:
-#             return jsonify({"error": f"Failed to load mapping file: {str(e)}"}), 500
-#         # Transform the data
-#         transformed_data = transform_using_mapping(data, mapping_rules, entity_type)    
-#         return jsonify(transformed_data)
-    
-#     except Exception as e:
-#         log_to_debugger("transform", "error", f"Error transforming data: {str(e)}", request_data)
-#         return jsonify({"error": str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -100,7 +174,7 @@ def transform_using_mapping(data, mapping_rules, entity_type):
         
         # Set default hubspot_id to null for contacts
         if entity_type == 'contact':
-            transformed_item['hubspot_id'] = None
+            transformed_item['hubspot_id'] = item.get('id')
         
         # For each field in the mapping rules
         for source_field, target_field in mapping_rules.items():
@@ -128,7 +202,5 @@ def transform_using_mapping(data, mapping_rules, entity_type):
         result[f"{entity_type}s"] = transformed_items
     return result
 
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-

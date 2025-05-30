@@ -110,9 +110,9 @@ def get_target_fields(entity_type):
 def get_service_mapping_directory(entity_type):
     """Get the correct service directory path for an entity type"""
     service_directories = {
-        "contact": "../service_contacts/mappings",
-        "project": "../service_projects/mappings",
-        "contract": "../service_contracts/mappings"
+        "contact": "/service_contacts/mappings",      # ✅ Correct Docker mount path
+        "project": "/service_projects/mappings",      # ✅ Correct Docker mount path
+        "contract": "/service_contracts/mappings"     # ✅ Correct Docker mount path
     }
     return service_directories.get(entity_type)
 

@@ -86,8 +86,7 @@
 
         <div style="margin: 20px 0;">
             <h3>Step 1: Select which data type you're mapping</h3>
-            <select id="entity-type" class="form-select">
-                <!-- Options will be loaded dynamically -->
+            <select id="entity-type" class="form-select" onchange="onEntityTypeChange()">
                 <option value="">Loading entity types...</option>
             </select>
             <div id="entity-type-error" class="alert alert-danger mt-2" style="display: none;"></div>
@@ -129,27 +128,24 @@
     <script>
         // Field options for different entity types
         let fieldOptions = {
-            contact: {
-                source: [], // Will be dynamically populated
-                target: []  // Will be dynamically populated
-            },
-            deal: {
-                source: [], // Will be dynamically populated
-                target: []  // Will be dynamically populated
-            },
-            company: {
-                source: [], // Will be dynamically populated
-                target: []  // Will be dynamically populated
-            },
-            project: {
-                source: [], // Will be dynamically populated
-                target: []  // Will be dynamically populated
-            },
-            contract: {
-                source: [], // Will be dynamically populated
-                target: []  // Will be dynamically populated
-            }
+            contact: { source: [], target: [] },
+            project: { source: [], target: [] },
+            contract: { source: [], target: [] }
         };
+
+        // Track if fields are loaded for current entity type
+        let fieldsLoaded = false;
+
+        // Function to handle entity type change
+        function onEntityTypeChange() {
+            const entityType = document.getElementById('entity-type').value;
+            if (entityType) {
+                // Clear existing rules when changing entity type
+                document.getElementById('mapping-rules').innerHTML = '';
+                // Load field options for the new entity type
+                loadFieldOptions();
+            }
+        }
 
         // Function to add a new mapping rule
         function addRule(sourceValue = '', targetValue = '') {
@@ -221,16 +217,13 @@
                 })
                 .then(data => {
                     if (data.error) {
-                        // Handle error from the API
                         console.error("API Error:", data.error);
                         throw new Error(data.error);
                     }
                     
                     const entityTypeSelect = document.getElementById('entity-type');
-                    // Clear existing options
                     entityTypeSelect.innerHTML = '';
                     
-                    // Add new options
                     if (data.entity_types && data.entity_types.length > 0) {
                         data.entity_types.forEach(type => {
                             const option = document.createElement('option');
@@ -242,7 +235,6 @@
                         loadFieldOptions();
                     } else {
                         console.warn("No entity types found in the API response");
-                        // Show error to user
                         entityTypeSelect.innerHTML = '<option value="">No entity types available</option>';
                         document.getElementById('entity-type-error').textContent = 
                             'No entity types could be discovered. Please check your service configuration.';
@@ -252,7 +244,6 @@
                 .catch(err => {
                     console.error("Error loading entity types:", err);
                     
-                    // Show error to user
                     const entityTypeSelect = document.getElementById('entity-type');
                     entityTypeSelect.innerHTML = '<option value="">Error loading types</option>';
                     
@@ -260,21 +251,24 @@
                         `Could not load entity types: ${err.message}. Please check your service configuration.`;
                     document.getElementById('entity-type-error').style.display = 'block';
                     
-                    // Disable the form elements
                     document.getElementById('entity-type').disabled = true;
                     document.querySelector('button[onclick="loadMapping()"]').disabled = true;
                 });
         }
-
-
 
         // Function to load source fields dynamically from the API
         function loadFieldOptions() {
             const entityType = document.getElementById('entity-type').value;
             const loadingIndicator = document.getElementById('loading-fields');
             
+            if (!entityType) {
+                console.warn('No entity type selected');
+                return;
+            }
+            
             // Show loading indicator
             loadingIndicator.style.display = 'block';
+            fieldsLoaded = false;
             
             // Load source fields
             const sourcePromise = fetch(`/api/source-fields/${entityType}`)
@@ -286,12 +280,10 @@
                 })
                 .then(data => {
                     if (data.fields && data.fields.length > 0) {
-                        // Store the source fields
                         fieldOptions[entityType].source = data.fields;
                         console.log(`Loaded ${data.fields.length} source fields for ${entityType}`);
                     } else {
                         console.warn(`No source fields found for ${entityType}`);
-                        // Use fallback fields if no fields were returned
                         setFallbackSourceFields(entityType);
                     }
                 });
@@ -306,12 +298,10 @@
                 })
                 .then(data => {
                     if (data.fields && data.fields.length > 0) {
-                        // Store the target fields
                         fieldOptions[entityType].target = data.fields;
                         console.log(`Loaded ${data.fields.length} target fields for ${entityType}`);
                     } else {
                         console.warn(`No target fields found for ${entityType}`);
-                        // Use fallback fields if no fields were returned
                         setFallbackTargetFields(entityType);
                     }
                 });
@@ -319,20 +309,18 @@
             // When both promises complete
             Promise.all([sourcePromise, targetPromise])
                 .then(() => {
-                    // Hide loading indicator
                     loadingIndicator.style.display = 'none';
-                    // Load mappings for the selected entity type
-                    loadMapping();
+                    fieldsLoaded = true;
+                    console.log(`✅ Field options loaded successfully for ${entityType}`);
                 })
                 .catch(err => {
                     loadingIndicator.style.display = 'none';
                     console.error("Error loading fields:", err);
                     alert(`Could not load fields: ${err.message}\nUsing default fields instead.`);
                     
-                    // Set fallback fields and continue
                     setFallbackSourceFields(entityType);
                     setFallbackTargetFields(entityType);
-                    loadMapping();
+                    fieldsLoaded = true;
                 });
         }
 
@@ -347,21 +335,24 @@
                     { value: "phone", label: "Phone Number" },
                     { value: "company", label: "Company Name" }
                 ];
-            } else if (entityType === 'deal' || entityType === 'project') {
+            } else if (entityType === 'project') {
                 fieldOptions[entityType].source = [
                     { value: "id", label: "ID" },
-                    { value: "name", label: "Project/Deal Name" },
+                    { value: "name", label: "Project Name" },
                     { value: "description", label: "Description" },
-                    { value: "amount", label: "Amount" },
-                    { value: "status", label: "Status" }
+                    { value: "status", label: "Status" },
+                    { value: "start_date", label: "Start Date" },
+                    { value: "end_date", label: "End Date" },
+                    { value: "budget", label: "Budget" }
                 ];
-            } else if (entityType === 'company' || entityType === 'contract') {
+            } else if (entityType === 'contract') {
                 fieldOptions[entityType].source = [
                     { value: "id", label: "ID" },
-                    { value: "name", label: "Company Name" },
                     { value: "title", label: "Contract Title" },
                     { value: "value", label: "Contract Value" },
-                    { value: "status", label: "Status" }
+                    { value: "status", label: "Status" },
+                    { value: "start_date", label: "Start Date" },
+                    { value: "end_date", label: "End Date" }
                 ];
             }
         }
@@ -375,27 +366,26 @@
                     { value: "properties.lastname", label: "Last Name" },
                     { value: "properties.email", label: "Email" },
                     { value: "properties.phone", label: "Phone" },
-                    { value: "properties.company", label: "Company" },
-                    { value: "properties.firstname1", label: "First Name (Custom)" },
-                    { value: "properties.lastname1", label: "Last Name (Custom)" }
+                    { value: "properties.company", label: "Company" }
                 ];
-            } else if (entityType === 'project' || entityType === 'deal') {
+            } else if (entityType === 'project') {
                 fieldOptions[entityType].target = [
                     { value: "hubspot_id", label: "HubSpot ID" },
                     { value: "properties.name", label: "Project Name" },
-                    { value: "properties.dealname", label: "Deal Name" },
                     { value: "properties.description", label: "Description" },
-                    { value: "properties.amount", label: "Amount/Budget" },
-                    { value: "properties.hs_pipeline_stage", label: "Status" }
+                    { value: "properties.hs_pipeline_stage", label: "Pipeline Stage" },
+                    { value: "properties.start_date", label: "Start Date" },
+                    { value: "properties.end_date", label: "End Date" },
+                    { value: "properties.budget", label: "Budget" }
                 ];
-            } else if (entityType === 'contract' || entityType === 'company') {
+            } else if (entityType === 'contract') {
                 fieldOptions[entityType].target = [
                     { value: "hubspot_id", label: "HubSpot ID" },
-                    { value: "properties.name", label: "Company Name" },
-                    { value: "properties.contract_name", label: "Contract Title" },
-                    { value: "properties.description", label: "Description" },
+                    { value: "properties.contract_name", label: "Contract Name" },
                     { value: "properties.contract_value", label: "Contract Value" },
-                    { value: "properties.status", label: "Status" }
+                    { value: "properties.status", label: "Status" },
+                    { value: "properties.start_date", label: "Start Date" },
+                    { value: "properties.end_date", label: "End Date" }
                 ];
             }
         }
@@ -405,6 +395,12 @@
             
             if (!entityType) {
                 alert('Please select an entity type first');
+                return;
+            }
+            
+            // Check if fields are loaded first
+            if (!fieldsLoaded) {
+                alert('Please wait for field options to load first, then try again.');
                 return;
             }
             
@@ -456,11 +452,7 @@
                     // Clear any existing rules since we couldn't load
                     document.getElementById('mapping-rules').innerHTML = '';
                 });
-            }
-
-
-
-       
+        }
 
         // Enhanced save function with better feedback
         function saveMapping() {
@@ -519,9 +511,6 @@
                 alert('Error saving: ' + err.message);
             });
         }
-
-        
-
 
         // Initialize when page loads
         window.onload = function() {
