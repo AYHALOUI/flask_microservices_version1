@@ -1,8 +1,7 @@
 {
+  "budget": "properties.budget",
   "end_date": "properties.end_date",
   "id": "hubspot_id",
   "name": "properties.name",
-  "start_date": "properties.start_date",
-  "status": "properties.hs_pipeline_stage",
-  "budget": "properties.budget"
+  "start_date": "properties.start_date"
 }
