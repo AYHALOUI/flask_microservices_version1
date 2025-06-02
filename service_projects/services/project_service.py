@@ -14,7 +14,6 @@ class ProjectService:
 
     def sync_projects(self, params):
         """Main method to sync projects from Oggo to HubSpot"""
-        
         try:
             # Step 1: Fetch projects from Oggo
             self.logger.info("=== STEP 1: FETCHING PROJECTS FROM OGGO ===")

@@ -2,7 +2,7 @@ from  flask import  Flask
 import logging
 import os
 # from blueprints.contact_blueprint import conatct_bp
-# from shared.debugger_client import log_to_debugger
+from shared.debugger_client import log_to_debugger
 from blueprints.contact_blueprint import contact_bp
 
 def create_app():
@@ -18,5 +18,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    # log_to_debugger("contact", "info", "Contact service started")
+    log_to_debugger("contact", "info", "Contact service started")
     app.run(host="0.0.0.0", port="5000", debug=True)

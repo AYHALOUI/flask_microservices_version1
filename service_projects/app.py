@@ -3,6 +3,7 @@ from flask import Flask
 import logging
 import os
 from blueprints.project_blueprint import project_bp
+from shared.debugger_client import log_to_debugger
 
 def create_app():
     """Application factory pattern"""
@@ -16,5 +17,6 @@ def create_app():
     return app
 
 if __name__ == "__main__":
+    log_to_debugger("project", "info", "project service started")
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)

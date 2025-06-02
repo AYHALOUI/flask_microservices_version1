@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 import logging
 from services.project_service import ProjectService
+from shared.debugger_client import log_to_debugger
+
 
 project_bp = Blueprint('project', __name__)
 logger = logging.getLogger(__name__)
@@ -15,6 +17,9 @@ def health_check():
 @project_bp.route('/sync', methods=['POST'])
 def sync_projects():
     """Sync projects from Oggo to HubSpot"""
+
+    log_to_debugger("project", "info", "sync/project service started")
+
     try:
         params = request.json or {}
         logger.info("Received project sync request")
