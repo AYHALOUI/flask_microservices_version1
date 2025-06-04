@@ -59,25 +59,6 @@ services:
       - service_transformer
       - service_connect
   
-  service_contracts:
-    build: ./service_contracts
-    container_name: service_contracts
-    environment:
-      - TRANSFORM_SERVICE_URL=http://service_transformer:5000
-      - SERVICE_CONNECT=http://service_connect:5000
-    volumes:
-      - ./service_contracts:/app
-      - ./data/contracts:/app/data
-      - ./shared:/app/shared
-    ports:
-      - "5009:5000"
-    networks:
-      - microservices_network
-    restart: unless-stopped
-    depends_on:
-      - service_transformer
-
-
   service_debugger:
     build: ./service_debugger
     container_name: service_debugger
@@ -114,7 +95,6 @@ services:
     restart: unless-stopped
   
  
-
   service_connect:
     build: ./service_connect
     container_name: service_connect
@@ -133,8 +113,6 @@ services:
     restart: unless-stopped
     depends_on:
       - mock-external-apis
-
-
 
 
   mock-external-apis:
@@ -169,16 +147,3 @@ services:
       - service_transformer
       - service_contacts
       - service_connect
-
-  service_queue:
-    build: ./service_queue
-    container_name: service_queue
-    volumes:
-      - ./service_queue:/app
-      - ./data/queue:/app/data
-      - ./shared:/app/shared
-    ports:
-      - "5010:5000"
-    networks:
-      - microservices_network
-    restart: unless-stopped

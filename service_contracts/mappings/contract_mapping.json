@@ -1,8 +1,0 @@
-{
-  "end_date": "properties.end_date",
-  "id": "hubspot_id",
-  "status": "properties.status",
-  "title": "properties.contract_name",
-  "value": "properties.contract_value",
-  "start_date": "properties.start_date"
-}
