@@ -151,42 +151,7 @@ def get_logs():
         logger.error(f"Error retrieving logs: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-# @app.route('/exchanges', methods=['GET'])
-# def get_exchanges():
-#     """Retrieve service exchanges with optional filtering"""
-#     try:
-#         # Get query parameters
-#         source = request.args.get('source_service')
-#         target = request.args.get('target_service')
-#         limit = request.args.get('limit', default=100, type=int)
-        
-#         # Filter exchanges based on parameters
-#         if source and target:
-#             # Filter by both source and target
-#             Exchange = Query()
-#             exchanges = exchanges_db.search((Exchange.source_service == source) & 
-#                                           (Exchange.target_service == target))
-#         elif source:
-#             # Filter by source only
-#             Exchange = Query()
-#             exchanges = exchanges_db.search(Exchange.source_service == source)
-#         elif target:
-#             # Filter by target only
-#             Exchange = Query()
-#             exchanges = exchanges_db.search(Exchange.target_service == target)
-#         else:
-#             # No filters - get all exchanges
-#             exchanges = exchanges_db.all()
-        
-#         # Sort by timestamp (newest first) and limit results
-#         exchanges.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-#         exchanges = exchanges[:limit]
-        
-#         return jsonify(exchanges)
-    
-#     except Exception as e:
-#         logger.error(f"Error retrieving exchanges: {str(e)}")
-#         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/reset-db', methods=['GET'])
 def reset_db_endpoint():

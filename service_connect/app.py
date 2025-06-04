@@ -9,8 +9,11 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ===== Private Helper Functions =====
 
+
+
+
+# ===== Private Helper Functions =====
 def _get_targets_from_env():
     """Get target configurations from environment variables"""
     return {
@@ -66,7 +69,7 @@ def _execute_proxy_request(method, url, headers, data):
             url=url,
             headers=headers,
             data=data,
-            timeout=30  # Added timeout
+            timeout=30
         )
         
         return Response(
@@ -82,17 +85,8 @@ def _execute_proxy_request(method, url, headers, data):
             "url": url
         }), 500
 
-def _log_request(target, endpoint, method, target_url):
-    """Log information about the proxy request"""
-    logger.info(f"Proxying {method} request to {target}: {endpoint}")
-    logger.info(f"Target URL: {target_url}")
-
-# ===== Global Configuration =====
-
 # Load target configurations
 ALLOWED_TARGETS = _get_targets_from_env()
-
-# ===== Public API Endpoints =====
 
 @app.route('/proxy/<target>/<path:endpoint>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 def proxy_request(target, endpoint):
@@ -120,15 +114,6 @@ def proxy_request(target, endpoint):
     
     # Execute the proxy request
     return _execute_proxy_request(request.method, target_url, headers, request_data)
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        "status": "ok", 
-        "service": "proxy",
-        "targets": list(ALLOWED_TARGETS.keys())
-    })
 
 
 if __name__ == "__main__":

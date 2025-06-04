@@ -9,7 +9,6 @@ services:
     privileged: true
     volumes:
       - ./gateway:/app
-      - ./data/gateway:/app/data
       - ./shared:/app/shared
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
@@ -22,8 +21,6 @@ services:
     depends_on:
       - service_contacts
       - service_transformer
-      # - service_storage
-      # - service_debugger
 
   service_contacts:
     build: ./service_contacts
@@ -34,7 +31,6 @@ services:
       - QUEUE_SERVICE_URL=http://service_queue:5000
     volumes:
       - ./service_contacts:/app
-      # - ./data/contacts:/app/data
       - ./shared:/app/shared
     ports:
       - "5001:5000"
@@ -52,9 +48,8 @@ services:
       - TRANSFORM_SERVICE_URL=http://service_transformer:5000
       - SERVICE_CONNECT=http://service_connect:5000
     volumes:
-      - ./service_projects:/app
-      # - ./data/projects:/app/data
       - ./shared:/app/shared
+      - ./service_projects:/app
     ports:
       - "5005:5000"
     networks:
@@ -83,20 +78,6 @@ services:
       - service_transformer
 
 
-
-  # service_storage:
-  #   build: ./service_storage
-  #   container_name: service_storage
-  #   volumes:
-  #     - ./data/storage:/app/data
-  #     - ./shared:/app/shared
-  #     - ./service_storage:/app
-  #   ports:
-  #     - "5007:5000"
-  #   networks:
-  #     - microservices_network
-  #   restart: unless-stopped
-
   service_debugger:
     build: ./service_debugger
     container_name: service_debugger
@@ -123,7 +104,6 @@ services:
       - ./data/transformer:/app/data
       - ./service_transformer:/app
       - ./shared:/app/shared
-      # Mount service directories so transformer can access their mapping files
       - ./service_contacts:/service_contacts
       - ./service_projects:/service_projects  
       - ./service_contracts:/service_contracts
@@ -154,23 +134,7 @@ services:
       - mock-external-apis
 
 
- # node js service
-  # mock-external-apis:
-  #   build: ./mock-external-apis
-  #   container_name: mock-external-apis
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - microservices_network
-  
-  # mock-external-apis:
-  #   build: ./mock-external-apis
-  #   container_name: mock-external-apis
-  #   ports:
-  #     - "3000:5000"
-  #   # networks:
-  #   #   - microservices_network
-  #   restart: unless-stopped
+
 
   mock-external-apis:
     build: ./mock-external-apis
@@ -181,7 +145,7 @@ services:
       - microservices_network
     restart: unless-stopped
     volumes:
-      - ./mock-external-apis:/app  # For development
+      - ./mock-external-apis:/app
 
 
   service_mapping:
