@@ -91,6 +91,15 @@ class ProjectService:
             error_msg = f"Failed to transform projects: {str(e)}"
             self.logger.error(error_msg)
             raise Exception(error_msg)
+        
+    def load_mapping(self, mapping_file):
+        """Load mapping configuration from JSON file"""
+        try:
+            with open(mapping_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            self.logger.error(f"Error loading mapping file {mapping_file}: {str(e)}")
+            raise e
     
     def _build_transform_request(self, projects):
         """Build the request configuration for Transform service"""
@@ -98,8 +107,8 @@ class ProjectService:
         headers = {"Content-Type": "application/json"}
         payload = {
             "data": projects,
-            "entity_type": "project",  # ✅ This will read project_mapping.json
-            "mapping_file": "project_mapping.json"
+            "entity_type": "project",  
+            "mapping_file": self.load_mapping('./mappings/project_mapping.json')
         }
         return url, headers, payload
 

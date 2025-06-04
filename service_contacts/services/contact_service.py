@@ -138,6 +138,6 @@ class ContactService:
         payload = {
             "data": contacts,
             "entity_type": "contact",
-            "mapping_file": self.load_mapping("contact_mapping.json")
+            "mapping_file": self.load_mapping("./mappings/contact_mapping.json")
         }
         return url, headers, payload

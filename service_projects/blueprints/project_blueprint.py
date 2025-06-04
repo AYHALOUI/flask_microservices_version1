@@ -17,9 +17,6 @@ def health_check():
 @project_bp.route('/sync', methods=['POST'])
 def sync_projects():
     """Sync projects from Oggo to HubSpot"""
-
-    log_to_debugger("project", "info", "sync/project service started")
-
     try:
         params = request.json or {}
         logger.info("Received project sync request")
@@ -28,20 +25,6 @@ def sync_projects():
     except Exception as e:
         logger.error(f"Error in project sync: {str(e)}")
         return jsonify({"error": f"Error in project sync: {str(e)}"}), 500
-
-# Keep existing project CRUD endpoints
-@project_bp.route('/projects', methods=['GET'])
-def get_projects():
-    """Get all projects with optional filtering"""
-    try:
-        status = request.args.get('status')
-        contact_id = request.args.get('contact_id')
-        
-        # Your existing logic here...
-        return jsonify({"projects": []})  # Replace with actual implementation
-    except Exception as e:
-        logger.error(f"Error retrieving projects: {str(e)}")
-        return jsonify({"error": str(e)}), 500
 
 @project_bp.route('/projects', methods=['POST'])
 def create_project():
