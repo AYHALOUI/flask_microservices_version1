@@ -117,13 +117,6 @@ class ConnectService:
             
             response_time = round((time.time() - start_time) * 1000, 2)
             
-            # Log the API call for monitoring/debugging
-            log_to_debugger("connect", "info", f"External API call completed", {
-                "method": method,
-                "url": url,
-                "status_code": response.status_code,
-                "response_time_ms": response_time
-            })
             
             # Create Flask response that preserves original response
             flask_response = Response(

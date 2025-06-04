@@ -2,7 +2,6 @@
 from flask import Flask
 import logging
 from blueprints.gateway_blueprint import gateway_bp
-from shared.debugger_client import log_to_debugger
 
 def create_app():
     """Application factory pattern"""

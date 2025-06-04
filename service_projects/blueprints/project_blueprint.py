@@ -10,9 +10,6 @@ logger = logging.getLogger(__name__)
 # Initialize services
 project_service = ProjectService()
 
-@project_bp.route('/health', methods=['GET'])
-def health_check():
-    return {"status": "ok", "service": "project"}
 
 @project_bp.route('/sync', methods=['POST'])
 def sync_projects():

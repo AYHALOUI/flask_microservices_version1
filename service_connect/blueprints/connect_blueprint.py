@@ -21,11 +21,6 @@ def proxy_request(target, endpoint):
     - /proxy/hubspot/crm/v3/objects/contacts -> forwards to external HubSpot API
     """
     try:
-        log_to_debugger("connect", "info", f"Proxying request to {target}/{endpoint}", {
-            "method": request.method,
-            "target": target,
-            "endpoint": endpoint
-        })
         
         response = connect_service.proxy_request(
             target=target,
@@ -35,20 +30,10 @@ def proxy_request(target, endpoint):
             data=request.get_data(),
             params=dict(request.args)
         )
-        
-        log_to_debugger("connect", "info", f"Successfully proxied request to {target}/{endpoint}", {
-            "status_code": response.status_code,
-            "target": target
-        })
-        
+                
         return response
         
-    except Exception as e:
-        log_to_debugger("connect", "error", f"Failed to proxy request to {target}/{endpoint}", {
-            "error": str(e),
-            "target": target
-        })
-        
+    except Exception as e:        
         return jsonify({"error": f"Proxy error: {str(e)}"}), 500
 
 

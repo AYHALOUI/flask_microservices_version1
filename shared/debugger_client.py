@@ -35,3 +35,19 @@ def record_exchange(source, target, request_data, response_data=None):
         requests.post("http://service_debugger:5000/exchange", json=payload, timeout=2)
     except Exception as e:
         logger.error(f"Failed to record exchange: {str(e)}")
+
+def log_simple_flow(source, destination, action="request"):
+    """Simple from->to logging"""
+    log_entry = {
+        "timestamp": time.time(),
+        "flow": f"{source} → {destination}",
+        "action": action,
+        "service": "flow_tracker"
+    }
+        
+    # Send to debugger service
+    requests.post(
+        "http://service_debugger:5000/log", 
+        json=log_entry, 
+        timeout=1
+    )
