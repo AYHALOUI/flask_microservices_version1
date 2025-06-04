@@ -125,6 +125,7 @@ services:
       - HUBSPOT_API_KEY=mock-hubspot-key
     volumes:
       - ./service_connect:/app
+      - ./shared:/app/shared
     ports:
       - "5008:5000"
     networks:

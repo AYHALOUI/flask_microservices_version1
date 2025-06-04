@@ -1,4 +1,3 @@
-
 import logging
 import os
 import requests
@@ -42,6 +41,14 @@ class ContactService:
             raise e
         
 
+    def load_mapping(self, mapping_file):
+        """Load mapping configuration from JSON file"""
+        try:
+            with open(mapping_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            self.logger.error(f"Error loading mapping file {mapping_file}: {str(e)}")
+            raise e
 
 
     #============ private Methods ===============
@@ -98,7 +105,7 @@ class ContactService:
 
     def _transform_contacts(self, contacts):
         """Transform contact using the transformation service"""
-        url, headers, payload = self._build_transfrom_request(contacts)
+        url, headers, payload = self._build_transform_request(contacts)
 
         try:
             self.logger.info(f"Transform request payload: {payload}")
@@ -123,13 +130,14 @@ class ContactService:
             self.logger.error(error_msg)
             raise Exception(error_msg)
     
-    def _build_transfrom_request(self, contacts):
+    def _build_transform_request(self, contacts):
         """Build the request configuration for Transform service"""
         url = f"{self.service_transform}/transform"
         headers = {"Content-Type": "application/json"}
+        
         payload = {
             "data": contacts,
             "entity_type": "contact",
-            "mapping_file": "contact_mapping.json"
+            "mapping_file": self.load_mapping("contact_mapping.json")
         }
         return url, headers, payload
