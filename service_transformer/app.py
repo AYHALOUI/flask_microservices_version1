@@ -10,78 +10,6 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.route('/debug', methods=['GET'])
-def debug_mappings():
-    """Debug endpoint to check what mapping files are accessible"""
-    debug_info = {
-        "container_working_directory": os.getcwd(),
-        "container_root_contents": [],
-        "mapping_locations": {},
-        "environment_variables": dict(os.environ)
-    }
-    
-    try:
-        # Check container root
-        debug_info["container_root_contents"] = os.listdir('/')
-        
-        # Check different possible locations
-        possible_locations = [
-            '/app/mappings',
-            '/app/mappings/contacts',
-            '/service_contacts',
-            '/service_contacts/mappings', 
-            './service_contacts/mappings',
-            '../service_contacts/mappings'
-        ]
-        
-        for location in possible_locations:
-            try:
-                if os.path.exists(location):
-                    debug_info["mapping_locations"][location] = {
-                        "exists": True,
-                        "is_directory": os.path.isdir(location),
-                        "contents": os.listdir(location) if os.path.isdir(location) else "Not a directory"
-                    }
-                else:
-                    debug_info["mapping_locations"][location] = {"exists": False}
-            except Exception as e:
-                debug_info["mapping_locations"][location] = {"error": str(e)}
-        
-        # Try to read contact mapping from different locations
-        contact_mapping_attempts = []
-        for location in [
-            '/service_contacts/mappings/contact_mapping.json',
-            '/app/mappings/contacts/contact_mapping.json',
-            '/app/mappings/contact_mapping.json'
-        ]:
-            try:
-                if os.path.exists(location):
-                    with open(location, 'r') as f:
-                        content = json.load(f)
-                    contact_mapping_attempts.append({
-                        "location": location,
-                        "success": True,
-                        "content": content
-                    })
-                else:
-                    contact_mapping_attempts.append({
-                        "location": location,
-                        "success": False,
-                        "reason": "File does not exist"
-                    })
-            except Exception as e:
-                contact_mapping_attempts.append({
-                    "location": location,
-                    "success": False,
-                    "reason": str(e)
-                })
-        
-        debug_info["contact_mapping_attempts"] = contact_mapping_attempts
-        
-    except Exception as e:
-        debug_info["error"] = str(e)
-    
-    return jsonify(debug_info)
 
 def get_mapping_from_service(entity_type):
     """Get mapping from the mapping service"""
@@ -117,7 +45,6 @@ def get_mapping_from_file(entity_type):
                 logger.info(f"❌ File not found: {mapping_path}")
         except Exception as e:
             logger.error(f"❌ Error reading {mapping_path}: {str(e)}")
-    
     logger.error(f"❌ Could not find mapping file for {entity_type} in any location")
     return {}
 

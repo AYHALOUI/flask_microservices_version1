@@ -33,164 +33,164 @@ def get_service_mapping_directory(entity_type):
     }
     return service_directories.get(entity_type)
 
-def get_source_fields_from_existing_mappings(entity_type):
-    """Get source fields from existing mapping files"""
-    try:
-        # Try to read existing mapping file
-        service_mapping_dir = get_service_mapping_directory(entity_type)
-        if service_mapping_dir:
-            mapping_file = f"{service_mapping_dir}/{entity_type}_mapping.json"
+# def get_source_fields_from_existing_mappings(entity_type):
+#     """Get source fields from existing mapping files"""
+#     try:
+#         # Try to read existing mapping file
+#         service_mapping_dir = get_service_mapping_directory(entity_type)
+#         if service_mapping_dir:
+#             mapping_file = f"{service_mapping_dir}/{entity_type}_mapping.json"
             
-            app.logger.info(f"Checking for existing mapping at: {mapping_file}")
+#             app.logger.info(f"Checking for existing mapping at: {mapping_file}")
             
-            if os.path.exists(mapping_file):
-                with open(mapping_file, 'r') as f:
-                    mapping_data = json.load(f)
+#             if os.path.exists(mapping_file):
+#                 with open(mapping_file, 'r') as f:
+#                     mapping_data = json.load(f)
                 
-                # Extract source fields from the mapping
-                source_fields = []
-                for source_field in mapping_data.keys():
-                    # Create human-readable labels
-                    label = source_field.replace('_', ' ').title()
-                    source_fields.append({
-                        "value": source_field,
-                        "label": label
-                    })
+#                 # Extract source fields from the mapping
+#                 source_fields = []
+#                 for source_field in mapping_data.keys():
+#                     # Create human-readable labels
+#                     label = source_field.replace('_', ' ').title()
+#                     source_fields.append({
+#                         "value": source_field,
+#                         "label": label
+#                     })
                 
-                app.logger.info(f"✅ Found {len(source_fields)} source fields from existing mapping")
-                return source_fields
-            else:
-                app.logger.info(f"No existing mapping file found at: {mapping_file}")
+#                 app.logger.info(f"✅ Found {len(source_fields)} source fields from existing mapping")
+#                 return source_fields
+#             else:
+#                 app.logger.info(f"No existing mapping file found at: {mapping_file}")
         
-        return []
+#         return []
         
-    except Exception as e:
-        app.logger.error(f"Error reading existing mapping: {str(e)}")
-        return []
+#     except Exception as e:
+#         app.logger.error(f"Error reading existing mapping: {str(e)}")
+#         return []
 
-def get_fields_from_live_data(entity_type):
-    """Get source fields by analyzing actual data from external APIs"""
-    try:
-        # Connect to the external API to get sample data
-        connect_service = os.environ.get('SERVICE_CONNECT', 'http://service_connect:5000')
+# def get_fields_from_live_data(entity_type):
+#     """Get source fields by analyzing actual data from external APIs"""
+#     try:
+#         # Connect to the external API to get sample data
+#         connect_service = os.environ.get('SERVICE_CONNECT', 'http://service_connect:5000')
         
-        if entity_type == 'contact':
-            api_url = f"{connect_service}/proxy/oggo/contacts"
-        elif entity_type == 'project':
-            api_url = f"{connect_service}/proxy/oggo/projects"
-        else:
-            app.logger.warning(f"No API endpoint configured for entity type: {entity_type}")
-            return []
+#         if entity_type == 'contact':
+#             api_url = f"{connect_service}/proxy/oggo/contacts"
+#         elif entity_type == 'project':
+#             api_url = f"{connect_service}/proxy/oggo/projects"
+#         else:
+#             app.logger.warning(f"No API endpoint configured for entity type: {entity_type}")
+#             return []
         
-        app.logger.info(f"Fetching live data from: {api_url}")
-        response = requests.get(api_url, timeout=5)
+#         app.logger.info(f"Fetching live data from: {api_url}")
+#         response = requests.get(api_url, timeout=5)
         
-        if response.status_code == 200:
-            data = response.json()
-            if data and len(data) > 0:
-                # Get all unique fields from the first few records
-                all_fields = set()
-                sample_size = min(3, len(data))  # Analyze first 3 records or all if less
+#         if response.status_code == 200:
+#             data = response.json()
+#             if data and len(data) > 0:
+#                 # Get all unique fields from the first few records
+#                 all_fields = set()
+#                 sample_size = min(3, len(data))  # Analyze first 3 records or all if less
                 
-                for item in data[:sample_size]:
-                    if isinstance(item, dict):
-                        all_fields.update(item.keys())
+#                 for item in data[:sample_size]:
+#                     if isinstance(item, dict):
+#                         all_fields.update(item.keys())
                 
-                # Convert to the expected format
-                source_fields = []
-                for field in sorted(all_fields):
-                    # Create human-readable labels
-                    label = field.replace('_', ' ').title()
-                    source_fields.append({
-                        "value": field,
-                        "label": label
-                    })
+#                 # Convert to the expected format
+#                 source_fields = []
+#                 for field in sorted(all_fields):
+#                     # Create human-readable labels
+#                     label = field.replace('_', ' ').title()
+#                     source_fields.append({
+#                         "value": field,
+#                         "label": label
+#                     })
                 
-                app.logger.info(f"✅ Found {len(source_fields)} fields from live data for {entity_type}")
-                return source_fields
-            else:
-                app.logger.warning(f"Empty data response for {entity_type}")
-        else:
-            app.logger.warning(f"API request failed with status {response.status_code} for {entity_type}")
+#                 app.logger.info(f"✅ Found {len(source_fields)} fields from live data for {entity_type}")
+#                 return source_fields
+#             else:
+#                 app.logger.warning(f"Empty data response for {entity_type}")
+#         else:
+#             app.logger.warning(f"API request failed with status {response.status_code} for {entity_type}")
         
-        return []
+#         return []
         
-    except Exception as e:
-        app.logger.error(f"Error fetching live data for {entity_type}: {str(e)}")
-        return []
+#     except Exception as e:
+#         app.logger.error(f"Error fetching live data for {entity_type}: {str(e)}")
+#         return []
 
 
-# API endpoint to get source fields (from Oggo)
-@app.route('/api/source-fields/<entity_type>', methods=['GET'])
-def get_source_fields(entity_type):
-    """Return available source fields by reading from multiple sources"""
-    try:
-        app.logger.info(f"=== GETTING SOURCE FIELDS FOR {entity_type} ===")
-        source_fields = []
+# # API endpoint to get source fields (from Oggo)
+# @app.route('/api/source-fields/<entity_type>', methods=['GET'])
+# def get_source_fields(entity_type):
+#     """Return available source fields by reading from multiple sources"""
+#     try:
+#         app.logger.info(f"=== GETTING SOURCE FIELDS FOR {entity_type} ===")
+#         source_fields = []
         
-        # Method 1: Try to get from existing mapping files (Priority for Option 2)
-        app.logger.info("Method 1: Checking existing mapping files...")
-        source_fields = get_source_fields_from_existing_mappings(entity_type)
+#         # Method 1: Try to get from existing mapping files (Priority for Option 2)
+#         app.logger.info("Method 1: Checking existing mapping files...")
+#         source_fields = get_source_fields_from_existing_mappings(entity_type)
         
-        # Method 2: If no mapping file, try live data
-        if not source_fields:
-            app.logger.info("Method 2: Trying to get from live data...")
-            source_fields = get_fields_from_live_data(entity_type)
+#         # Method 2: If no mapping file, try live data
+#         if not source_fields:
+#             app.logger.info("Method 2: Trying to get from live data...")
+#             source_fields = get_fields_from_live_data(entity_type)
         
-        # Method 3: If still no fields, use fallback
-        if not source_fields:
-            app.logger.info("Method 3: Using fallback fields...")
-            # source_fields = get_fallback_source_fields(entity_type)
+#         # Method 3: If still no fields, use fallback
+#         if not source_fields:
+#             app.logger.info("Method 3: Using fallback fields...")
+#             # source_fields = get_fallback_source_fields(entity_type)
         
-        app.logger.info(f"✅ Returning {len(source_fields)} source fields for {entity_type}")
-        return jsonify({"fields": source_fields})
+#         app.logger.info(f"✅ Returning {len(source_fields)} source fields for {entity_type}")
+#         return jsonify({"fields": source_fields})
         
-    except Exception as e:
-        app.logger.error(f"Error in get_source_fields: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         app.logger.error(f"Error in get_source_fields: {str(e)}")
+#         return jsonify({"error": str(e)}), 500
 
-# API endpoint to get target fields (HubSpot)
-@app.route('/api/target-fields/<entity_type>', methods=['GET'])
-def get_target_fields(entity_type):
-    """Return available target fields for the given entity type"""
-    try:
-        # Define target fields based on entity type
-        target_fields = {
-            "contact": [
-                {"value": "hubspot_id", "label": "HubSpot Contact ID"},
-                {"value": "properties.firstname", "label": "First Name"},
-                {"value": "properties.lastname", "label": "Last Name"},
-                {"value": "properties.email", "label": "Email"},
-                {"value": "properties.phone", "label": "Phone"},
-                {"value": "properties.company", "label": "Company"},
-                {"value": "properties.created_date", "label": "Created Date"},
-                {"value": "properties.last_modified_date", "label": "Last Modified Date"},
-                {"value": "properties.jobtitle", "label": "Job Title"},
-                {"value": "properties.website", "label": "Website"}
-            ],
-            "project": [
-                {"value": "hubspot_id", "label": "HubSpot Project ID"},
-                {"value": "properties.name", "label": "Project Name"},
-                {"value": "properties.description", "label": "Description"},
-                {"value": "properties.hs_pipeline_stage", "label": "Pipeline Stage"},
-                {"value": "properties.start_date", "label": "Start Date"},
-                {"value": "properties.end_date", "label": "End Date"},
-                {"value": "properties.budget", "label": "Budget"}
-            ],
-            "contract": [
-                {"value": "hubspot_id", "label": "HubSpot Contract ID"},
-                {"value": "properties.contract_name", "label": "Contract Name"},
-                {"value": "properties.contract_value", "label": "Contract Value"},
-                {"value": "properties.status", "label": "Status"},
-                {"value": "properties.start_date", "label": "Start Date"},
-                {"value": "properties.end_date", "label": "End Date"}
-            ]
-        }
+# # API endpoint to get target fields (HubSpot)
+# @app.route('/api/target-fields/<entity_type>', methods=['GET'])
+# def get_target_fields(entity_type):
+#     """Return available target fields for the given entity type"""
+#     try:
+#         # Define target fields based on entity type
+#         target_fields = {
+#             "contact": [
+#                 {"value": "hubspot_id", "label": "HubSpot Contact ID"},
+#                 {"value": "properties.firstname", "label": "First Name"},
+#                 {"value": "properties.lastname", "label": "Last Name"},
+#                 {"value": "properties.email", "label": "Email"},
+#                 {"value": "properties.phone", "label": "Phone"},
+#                 {"value": "properties.company", "label": "Company"},
+#                 {"value": "properties.created_date", "label": "Created Date"},
+#                 {"value": "properties.last_modified_date", "label": "Last Modified Date"},
+#                 {"value": "properties.jobtitle", "label": "Job Title"},
+#                 {"value": "properties.website", "label": "Website"}
+#             ],
+#             "project": [
+#                 {"value": "hubspot_id", "label": "HubSpot Project ID"},
+#                 {"value": "properties.name", "label": "Project Name"},
+#                 {"value": "properties.description", "label": "Description"},
+#                 {"value": "properties.hs_pipeline_stage", "label": "Pipeline Stage"},
+#                 {"value": "properties.start_date", "label": "Start Date"},
+#                 {"value": "properties.end_date", "label": "End Date"},
+#                 {"value": "properties.budget", "label": "Budget"}
+#             ],
+#             "contract": [
+#                 {"value": "hubspot_id", "label": "HubSpot Contract ID"},
+#                 {"value": "properties.contract_name", "label": "Contract Name"},
+#                 {"value": "properties.contract_value", "label": "Contract Value"},
+#                 {"value": "properties.status", "label": "Status"},
+#                 {"value": "properties.start_date", "label": "Start Date"},
+#                 {"value": "properties.end_date", "label": "End Date"}
+#             ]
+#         }
         
-        fields = target_fields.get(entity_type, [])
-        return jsonify({"fields": fields})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#         fields = target_fields.get(entity_type, [])
+#         return jsonify({"fields": fields})
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 # API endpoint to get existing mappings
 @app.route('/mappings/<entity_type>', methods=['GET'])
@@ -211,6 +211,9 @@ def get_mapping(entity_type):
         if os.path.exists(mapping_file):
             with open(mapping_file, 'r') as f:
                 mapping_data = json.load(f)
+            app.logger.info('------------------------------------------')
+            app.logger.info(f'mapping data -----> {mapping_data}')
+            app.logger.info('------------------------------------------')
             return jsonify({"rules": mapping_data})
         else:
             return jsonify({"error": f"No mapping found for {entity_type} at {mapping_file}"}), 404

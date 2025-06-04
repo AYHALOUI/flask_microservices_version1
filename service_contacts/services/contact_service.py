@@ -20,29 +20,18 @@ class ContactService:
         
         try:
             # Step 1: Fetch contacts from Oggo
-            self.logger.info("=== STEP 1: FETCHING FROM OGGO ===")
             contacts = self._fetch_contacts_from_oggo(params)
-            self.logger.info(f"Contacts result: {contacts}")
-            self.logger.info(f"Contacts type: {type(contacts)}")
             
             if not contacts:
                 return {"message": "No contacts found to sync"}
             
             # Step 2: Transform contacts
-            self.logger.info("=== STEP 2: TRANSFORMING CONTACTS ===")
             transformed_data = self._transform_contacts(contacts)
-            self.logger.info(f"Transformed data: {transformed_data}")
-            self.logger.info(f"Transformed data type: {type(transformed_data)}")
             
-            # Step 3: Send to HubSpot
-            self.logger.info("=== STEP 3: SENDING TO HUBSPOT ===")
+
             hubspot_response = self._send_to_hubspot(transformed_data)
-            self.logger.info(f"HubSpot response: {hubspot_response}")
-            self.logger.info(f"HubSpot response type: {type(hubspot_response)}")
-            
             return {
                 "status": "success",
-                "message": f"Successfully processed {len(contacts)} contacts",
                 "data": transformed_data,
                 "hubspot_response": hubspot_response,
             }
@@ -66,7 +55,6 @@ class ContactService:
                 error_msg = f"HubSpot API error: Status code {response.status_code}"
             
             hubspot_response = response.json()
-            # log_to_debugger("contact", "info", "Successfully sent contacts to HubSpot")
             return hubspot_response
 
         except requests.RequestException as e:
@@ -96,7 +84,6 @@ class ContactService:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             contacts = response.json()
-            # log_to_debugger("contact", "info", f"Retrieved {len(contacts)} contacts from Oggo")
             return contacts
         except requests.RequestException as e:
             error_msg = f"Failed to fetch contacts from Oggo: {str(e)}"
@@ -111,7 +98,6 @@ class ContactService:
 
     def _transform_contacts(self, contacts):
         """Transform contact using the transformation service"""
-        # log_to_debugger("contact", "info", "Sending contacts for transformation", {"count": len(contacts)})
         url, headers, payload = self._build_transfrom_request(contacts)
 
         try:

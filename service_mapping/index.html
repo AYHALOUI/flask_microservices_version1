@@ -200,49 +200,19 @@
             <button class="save-btn" onclick="saveMapping()">💾 Save All Settings</button>
         </div>
 
-        <hr style="margin: 30px 0;">
-        
-        <div>
-            <h3>Import/Export Settings</h3>
-            <p>Save your settings to a file or load them from a saved file</p>
-            <div style="margin: 10px 0;">
-                <button onclick="exportMapping()" class="btn btn-primary">📥 Download Settings</button>
-                <input type="file" id="file-input" accept=".json" style="display: none;">
-                <button onclick="document.getElementById('file-input').click()" class="btn btn-secondary">📤 Upload Settings</button>
-            </div>
-        </div>
-
-        <div id="test-section" style="margin-top: 30px;">
+        <!-- <div id="test-section" style="margin-top: 30px;">
             <h3>Test Your Mapping</h3>
             <p>See how your data will look after transformation</p>
             <button onclick="testMapping()" class="btn btn-info">🔍 Test with Sample Data</button>
             <div id="test-results" style="margin-top: 15px; display: none;"></div>
-        </div>
+        </div> -->
     </div>
 
     <script>
-        // Field options for different entity types
-        let fieldOptions = {
-            contact: { source: [], target: [] },
-            project: { source: [], target: [] },
-            contract: { source: [], target: [] }
-        };
 
         // Track if fields are loaded for current entity type
         let fieldsLoaded = true; // Always true since we're not loading from API anymore
 
-        // Common field suggestions for auto-complete
-        const commonSourceFields = {
-            contact: ['id', 'first_name', 'last_name', 'email', 'phone', 'company', 'created_at', 'updated_at', 'aymene'],
-            project: ['id', 'name', 'description', 'status', 'start_date', 'end_date', 'budget'],
-            contract: ['id', 'title', 'value', 'status', 'start_date', 'end_date']
-        };
-
-        const commonDestinationFields = {
-            contact: ['hubspot_id', 'properties.firstname', 'properties.lastname', 'properties.email', 'properties.phone', 'properties.company', 'properties.created_date', 'properties.last_modified_date', 'properties.haloui'],
-            project: ['hubspot_id', 'properties.name', 'properties.description', 'properties.hs_pipeline_stage', 'properties.start_date', 'properties.end_date', 'properties.budget'],
-            contract: ['hubspot_id', 'properties.contract_name', 'properties.contract_value', 'properties.status', 'properties.start_date', 'properties.end_date']
-        };
 
         // Function to handle entity type change
         function onEntityTypeChange() {
@@ -253,15 +223,7 @@
             }
         }
 
-        // Function to add quick-fill buttons for common fields
-        function addQuickFillButtons(fieldType, entityType, inputElement) {
-            const commonFields = fieldType === 'source' ? commonSourceFields[entityType] : commonDestinationFields[entityType];
-            if (!commonFields) return '';
 
-            return commonFields.slice(0, 3).map(field => 
-                `<button class="quick-fill-btn" onclick="fillField('${inputElement}', '${field}')" type="button">${field}</button>`
-            ).join('');
-        }
 
         // Function to fill field with suggested value
         function fillField(inputId, value) {
@@ -293,11 +255,7 @@
                            id="${sourceInputId}"
                            class="form-control source-field" 
                            value="${sourceValue}" 
-                           placeholder="e.g., first_name, aymene, custom_field">
-                    <div class="helper-text">
-                        Enter the exact field name from your source system
-                        ${addQuickFillButtons('source', entityType, sourceInputId)}
-                    </div>
+                           placeholder="e.g., first_name, custom_field">
                 </div>
                 
                 <div class="big-arrow">→</div>
@@ -309,10 +267,6 @@
                            class="form-control target-field" 
                            value="${targetValue}" 
                            placeholder="e.g., properties.firstname, hubspot_id">
-                    <div class="helper-text">
-                        Enter the destination field path (use dot notation)
-                        ${addQuickFillButtons('destination', entityType, targetInputId)}
-                    </div>
                 </div>
                 
                 <button class="remove-btn" onclick="removeRule(this)">✕</button>
@@ -415,6 +369,18 @@
                     }
                     
                     // Add rules from the loaded data
+                    // 2. Object.entries() converts the object into an array of [key, value] pairs
+                    // Input object:
+                    // {
+                    //     "first_name": "properties.firstname",
+                    //     "email": "properties.email"
+                    // }
+
+                    // // Object.entries() output:
+                    // [
+                    //     ["first_name", "properties.firstname"],
+                    //     ["email", "properties.email"]
+                    // ]
                     let rulesCount = 0;
                     for (const [source, target] of Object.entries(rules)) {
                         console.log(`Adding rule: ${source} -> ${target}`);
@@ -505,103 +471,35 @@
             });
         }
 
-        // Export mapping to JSON file
-        function exportMapping() {
-            const entityType = document.getElementById('entity-type').value;
-            if (!entityType) {
-                alert('Please select an entity type first');
-                return;
-            }
-            
-            const rules = {};
-            let rulesCount = 0;
-            
-            // Collect current rules
-            document.querySelectorAll('.mapping-rule').forEach(rule => {
-                const sourceField = rule.querySelector('.source-field').value.trim();
-                const targetField = rule.querySelector('.target-field').value.trim();
-                
-                if (sourceField && targetField) {
-                    rules[sourceField] = targetField;
-                    rulesCount++;
-                }
-            });
-            
-            if (rulesCount === 0) {
-                alert('No mapping rules to export. Please add some mappings first.');
-                return;
-            }
-            
-            // Create and download file
-            const dataStr = JSON.stringify(rules, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${entityType}_mapping.json`;
-            link.click();
-            URL.revokeObjectURL(url);
-            
-            alert(`✅ Exported ${rulesCount} mapping rules to ${entityType}_mapping.json`);
-        }
-
-        // Import mapping from JSON file
-        document.getElementById('file-input').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const rules = JSON.parse(e.target.result);
-                    
-                    // Clear existing rules
-                    document.getElementById('mapping-rules').innerHTML = '';
-                    
-                    // Add imported rules
-                    let rulesCount = 0;
-                    for (const [source, target] of Object.entries(rules)) {
-                        addRule(source, target);
-                        rulesCount++;
-                    }
-                    
-                    alert(`✅ Successfully imported ${rulesCount} mapping rules from ${file.name}`);
-                } catch (error) {
-                    alert(`❌ Error importing file: ${error.message}`);
-                }
-            };
-            reader.readAsText(file);
-        });
-
         // Test mapping function (placeholder)
-        function testMapping() {
-            const entityType = document.getElementById('entity-type').value;
-            if (!entityType) {
-                alert('Please select an entity type first');
-                return;
-            }
+        // function testMapping() {
+        //     const entityType = document.getElementById('entity-type').value;
+        //     if (!entityType) {
+        //         alert('Please select an entity type first');
+        //         return;
+        //     }
             
-            const rules = {};
-            document.querySelectorAll('.mapping-rule').forEach(rule => {
-                const sourceField = rule.querySelector('.source-field').value.trim();
-                const targetField = rule.querySelector('.target-field').value.trim();
-                if (sourceField && targetField) {
-                    rules[sourceField] = targetField;
-                }
-            });
+        //     const rules = {};
+        //     document.querySelectorAll('.mapping-rule').forEach(rule => {
+        //         const sourceField = rule.querySelector('.source-field').value.trim();
+        //         const targetField = rule.querySelector('.target-field').value.trim();
+        //         if (sourceField && targetField) {
+        //             rules[sourceField] = targetField;
+        //         }
+        //     });
             
-            if (Object.keys(rules).length === 0) {
-                alert('Please add some mapping rules first');
-                return;
-            }
+        //     if (Object.keys(rules).length === 0) {
+        //         alert('Please add some mapping rules first');
+        //         return;
+        //     }
             
-            // Show a preview of the mapping
-            const preview = Object.entries(rules).map(([source, target]) => 
-                `${source} → ${target}`
-            ).join('\n');
+        //     // Show a preview of the mapping
+        //     const preview = Object.entries(rules).map(([source, target]) => 
+        //         `${source} → ${target}`
+        //     ).join('\n');
             
-            alert(`Mapping Preview for ${entityType}:\n\n${preview}\n\nThis shows how your source fields will be mapped to destination fields.`);
-        }
+        //     alert(`Mapping Preview for ${entityType}:\n\n${preview}\n\nThis shows how your source fields will be mapped to destination fields.`);
+        // }
 
         // Initialize when page loads
         window.onload = function() {
