@@ -3,6 +3,7 @@ import requests
 from flask import Response, jsonify
 from services.discovery_service import DiscoveryService
 
+
 class GatewayService:
     """Service class for handling gateway operations"""
     

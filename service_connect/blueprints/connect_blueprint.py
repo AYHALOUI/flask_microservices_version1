@@ -21,6 +21,7 @@ def proxy_request(target, endpoint):
     - /proxy/hubspot/crm/v3/objects/contacts -> forwards to external HubSpot API
     """
     try:
+
         
         response = connect_service.proxy_request(
             target=target,

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import logging
 from services.gateway_service import GatewayService
-from shared.debugger_client import log_simple_flow
+from shared.debugger_client import track_incoming_request, track_routing, track_response
 
 gateway_bp = Blueprint('gateway', __name__)
 logger = logging.getLogger(__name__)
@@ -15,11 +15,15 @@ gateway_service = GatewayService()
 def gateway_router(service, route):
     """Main gateway router that forwards requests to appropriate services""" 
 
-    # Log: External Client → Gateway
-    log_simple_flow("external_client", "gateway", "incoming_request")
+    tracker = track_incoming_request("gateway")
+        
+    # Track routing decision
+    track_routing(tracker, "gateway", f"service_{service}")
     
-    # Log: Gateway → Target Service
-    log_simple_flow("gateway", f"service_{service}", "routing")
+    # Add request ID to headers for downstream services
+    headers = dict(request.headers)
+    headers['X-Request-ID'] = tracker.request_id
+
     try:
         # Use the service to handle the routing
         response = gateway_service.route_request(
@@ -30,11 +34,8 @@ def gateway_router(service, route):
             headers=dict(request.headers)
         )
 
-        # Log: Target Service → Gateway (response)
-        log_simple_flow(f"service_{service}", "gateway", "response")
-        
-        # Log: Gateway → External Client (response)
-        log_simple_flow("gateway", "external_client", "response")
+        # Track response back to client
+        track_response(tracker, "gateway", "external_client")
 
         return response
         

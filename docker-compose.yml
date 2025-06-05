@@ -147,3 +147,28 @@ services:
       - service_transformer
       - service_contacts
       - service_connect
+
+  service_logs:
+    build: ./service_logs
+    container_name: service_logs
+    volumes:
+      - ./service_logs:/app
+      - ./service_logs/data:/app/data
+    ports:
+      - "5020:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+
+  service_logs_ui:
+    build: ./service_logs_ui
+    container_name: service_logs_ui
+    volumes:
+      - ./service_logs_ui:/app
+    ports:
+      - "5021:5000"
+    networks:
+      - microservices_network
+    restart: unless-stopped
+    depends_on:
+      - service_logs

@@ -2,7 +2,8 @@ import logging
 import os
 import requests
 import json
-import time
+from flask import request
+from shared.debugger_client import track_api_call, track_response, FlowTracker
 
 
 class ContactService:
@@ -18,15 +19,23 @@ class ContactService:
         """Main method to sync contacts from Oggo to HubSpot"""
         
         try:
+            
+            request_id = request.headers.get('X-Request-ID') if request else None
+            tracker = FlowTracker(request_id)
+            track_api_call(tracker, "service_contacts", "service_connect", "fetch_oggo_contacts")
+
             # Step 1: Fetch contacts from Oggo
             contacts = self._fetch_contacts_from_oggo(params)
             
             if not contacts:
                 return {"message": "No contacts found to sync"}
             
-            # Step 2: Transform contacts
+            # Step 2: Transform contacts  
+            track_api_call(tracker, "service_contacts", "service_transformer", "transform_data")
             transformed_data = self._transform_contacts(contacts)
             
+            # Step 3: Send to HubSpot
+            track_api_call(tracker, "service_contacts", "service_connect", "send_to_hubspot")    
 
             hubspot_response = self._send_to_hubspot(transformed_data)
             return {

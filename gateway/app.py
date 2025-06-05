@@ -3,6 +3,7 @@ from flask import Flask
 import logging
 from blueprints.gateway_blueprint import gateway_bp
 
+
 def create_app():
     """Application factory pattern"""
     app = Flask(__name__)

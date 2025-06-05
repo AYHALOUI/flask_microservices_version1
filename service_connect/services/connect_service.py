@@ -3,7 +3,8 @@ import os
 import requests
 import time
 from flask import Response, jsonify
-from shared.debugger_client import log_to_debugger
+from shared.debugger_client import FlowTracker, track_api_call, track_response
+
 
 class ConnectService:
     """Service class for handling external API connections and proxying"""
@@ -42,6 +43,10 @@ class ConnectService:
 
     def proxy_request(self, target, endpoint, method, headers, data, params=None):
         """Proxy a request to an external service"""
+
+         # Get request ID from headers if available
+        request_id = headers.get('X-Request-ID')
+        tracker = FlowTracker(request_id)
         
         # Validate target
         target = self._validate_target(target)
@@ -51,11 +56,16 @@ class ConnectService:
         
         # Prepare headers with authentication
         prepared_headers = self._prepare_headers(target, headers)
+
+        # Track outgoing API call to external service
+        track_api_call(tracker, "service_connect", f"external_{target}", f"api_call")
         
-        # Execute the proxy request
-        return self._execute_proxy_request(method, target_url, prepared_headers, data, params)
+        resposne = self._execute_proxy_request(method, target_url, prepared_headers, data, params)
 
+        # Track response from external service
+        track_response(tracker, f"external_{target}", "service_connect")
 
+        return resposne
 
     # ============ Private Methods ===============
     def _validate_target(self, target):
