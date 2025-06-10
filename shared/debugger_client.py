@@ -44,10 +44,3 @@ def track_api_call(tracker, from_service, to_service, api_name):
 
 def track_response(tracker, from_service, to_service):
     tracker.log_flow(from_service, to_service, "response")
-
-# Legacy compatibility (for existing code)
-def log_to_debugger(service_name, level, message, additional_data=None):
-    pass  # Ignore other logs
-
-def record_exchange(source, target, request_data, response_data=None):
-    pass  # Ignore other logs

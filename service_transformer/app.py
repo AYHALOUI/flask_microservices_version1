@@ -4,7 +4,6 @@ import json
 import logging
 import time
 import requests
-from shared.debugger_client import log_to_debugger, record_exchange
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
