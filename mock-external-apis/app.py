@@ -85,70 +85,9 @@ projects = [
     }
 ]
 
-# Authorization middleware - commented out for development
-# @app.before_request
-# def check_auth():
-#     """Simple authorization check"""
-#     # Skip auth for development
-#     pass
 
-# OAuth endpoints
-@app.route('/oauth/request_token', methods=['POST'])
-def request_token():
-    """Simple OAuth 1.0 request token endpoint"""
-    # Generate token
-    token = f"rt_{uuid.uuid4().hex[:8]}"
-    secret = f"rs_{uuid.uuid4().hex[:12]}"
-    
-    # Store token
-    oauth_tokens['request_tokens'][token] = {
-        'secret': secret,
-        'created_at': time.time()
-    }
-    
-    logger.info(f"Created request token: {token}")
-    return f"oauth_token={token}&oauth_token_secret={secret}&oauth_callback_confirmed=true"
 
-@app.route('/oauth/authorize', methods=['GET'])
-def authorize():
-    """OAuth 1.0 authorize endpoint"""
-    token = request.args.get('oauth_token')
-    
-    if token not in oauth_tokens['request_tokens']:
-        return jsonify({'error': 'Invalid token'}), 400
-    
-    # Generate verifier
-    verifier = f"v_{uuid.uuid4().hex[:8]}"
-    oauth_tokens['request_tokens'][token]['verifier'] = verifier
-    
-    logger.info(f"Authorized token: {token} with verifier: {verifier}")
-    return f"<h1>Authorized!</h1><p>Your verifier is: {verifier}</p>"
 
-@app.route('/oauth/access_token', methods=['POST'])
-def access_token():
-    """OAuth 1.0 access token endpoint"""
-    # In a real implementation, we would verify the request token and verifier
-    # For simplicity, we'll just generate a new token
-    
-    token = f"at_{uuid.uuid4().hex[:8]}"
-    secret = f"as_{uuid.uuid4().hex[:12]}"
-    
-    # Store token
-    oauth_tokens['access_tokens'][token] = {
-        'secret': secret,
-        'created_at': time.time()
-    }
-    
-    logger.info(f"Created access token: {token}")
-    return f"oauth_token={token}&oauth_token_secret={secret}"
-
-# Health check
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'ok', 'service': 'mock-external-apis'})
-
-# ===== OGGO API ROUTES =====
 
 # Contacts endpoints
 @app.route('/contacts', methods=['GET'])
@@ -175,22 +114,7 @@ def get_contact(contact_id):
     else:
         return jsonify({'error': 'Contact not found'}), 404
 
-@app.route('/contacts/<contact_id>', methods=['PUT'])
-def update_contact(contact_id):
-    """Update an existing contact"""
-    logger.info(f'Oggo API: PUT /contacts/{contact_id}')
-    contact_index = next((i for i, c in enumerate(contacts) if c['id'] == contact_id), None)
-    
-    if contact_index is None:
-        return jsonify({'error': 'Contact not found'}), 404
-        
-    # Update contact
-    updated_data = request.json
-    updated_contact = {**contacts[contact_index], **updated_data}
-    updated_contact['updated_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
-    contacts[contact_index] = updated_contact
-    
-    return jsonify(updated_contact)
+
 
 # Projects endpoints
 @app.route('/projects', methods=['GET'])
@@ -219,22 +143,7 @@ def get_project(project_id):
     else:
         return jsonify({'error': 'Project not found'}), 404
 
-@app.route('/projects/<project_id>', methods=['PUT'])
-def update_project(project_id):
-    """Update an existing project"""
-    logger.info(f'Oggo API: PUT /projects/{project_id}')
-    project_index = next((i for i, p in enumerate(projects) if p['id'] == project_id), None)
-    
-    if project_index is None:
-        return jsonify({'error': 'Project not found'}), 404
-        
-    # Update project
-    updated_data = request.json
-    updated_project = {**projects[project_index], **updated_data}
-    updated_project['updated_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ')
-    projects[project_index] = updated_project
-    
-    return jsonify(updated_project)
+
 
 # ===== HUBSPOT API ROUTES =====
 

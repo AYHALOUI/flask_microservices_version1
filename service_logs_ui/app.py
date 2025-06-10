@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 from datetime import datetime
 from datetime import datetime
+import time
 
 
 
@@ -34,10 +35,38 @@ def logs_ui():
         if response.status_code == 200:
             data = response.json()
             logs = data.get('logs', [])
+            
+            # Fix timestamp and group by synchronization sessions
+            from datetime import datetime
+            grouped_logs = []
+            current_group = []
+            
+            for log in reversed(logs):  # Process in chronological order
+                if 'timestamp' in log:
+                    try:
+                        adjusted_timestamp = log['timestamp'] + 3600
+                        log['formatted_time'] = datetime.fromtimestamp(adjusted_timestamp).strftime('%H:%M:%S')
+                        
+                        # Start new group when we see "incoming_request"
+                        if log.get('action') == 'incoming_request':
+                            if current_group:  # Save previous group
+                                grouped_logs.append(current_group)
+                            current_group = [log]  # Start new group
+                        else:
+                            current_group.append(log)
+                    except:
+                        log['formatted_time'] = "00:00:00"
+            
+            # Add the last group
+            if current_group:
+                grouped_logs.append(current_group)
+            
+            # Reverse to show newest first
+            grouped_logs.reverse()
         else:
-            logs = []
+            grouped_logs = []
         
-        return render_template('logs.html', logs=logs)
+        return render_template('logs.html', grouped_logs=grouped_logs)
         
     except Exception as e:
         return f"Error fetching logs: {str(e)}"

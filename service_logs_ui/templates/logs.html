@@ -30,6 +30,24 @@
             padding: 15px;
         }
         
+        .request-group {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: #fdfdfe;
+        }
+        
+        .request-header {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            background: #e9ecef;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        
         .log-entry {
             display: flex;
             align-items: center;
@@ -89,6 +107,19 @@
             color: #666;
             margin-bottom: 15px;
         }
+        
+        .divider {
+            height: 2px;
+            background: linear-gradient(to right, #007bff, transparent);
+            margin: 20px 0;
+            border-radius: 1px;
+        }
+        
+        .request-summary {
+            font-size: 12px;
+            color: #6c757d;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -103,15 +134,30 @@
     </div>
     
     <div class="log-list">
-        {% if logs %}
-            {% for log in logs %}
-            <div class="log-entry">
-                <div class="time">{{ log.timestamp|int|timestamp_to_time }}</div>
-                <div class="from-service">{{ log.from_service|replace('service_', '')|replace('external_', '')|title }}</div>
-                <div class="arrow">→</div>
-                <div class="to-service">{{ log.to_service|replace('service_', '')|replace('external_', '')|title }}</div>
-                <div class="action">{{ log.action|replace('_', ' ')|title }}</div>
+        {% if grouped_logs %}
+            {% for group in grouped_logs %}
+            <div class="request-group">
+                <div class="request-header">
+                    🚀 Synchronization 
+                    <span class="request-summary">
+                        ({{ group|length }} steps • {{ group|first|attr('formatted_time') }})
+                    </span>
+                </div>
+                
+                {% for log in group %}
+                <div class="log-entry">
+                    <div class="time">{{ log.formatted_time }}</div>
+                    <div class="from-service">{{ log.from_service|replace('service_', '')|replace('external_', '')|title }}</div>
+                    <div class="arrow">→</div>
+                    <div class="to-service">{{ log.to_service|replace('service_', '')|replace('external_', '')|title }}</div>
+                    <div class="action">{{ log.action|replace('_', ' ')|title }}</div>
+                </div>
+                {% endfor %}
             </div>
+            
+            {% if not loop.last %}
+            <div class="divider"></div>
+            {% endif %}
             {% endfor %}
         {% else %}
             <div style="text-align: center; padding: 40px; color: #666;">
