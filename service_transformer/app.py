@@ -1,8 +1,5 @@
 from flask import Flask, request, jsonify
-import os
-import json
 import logging
-import time
 import requests
 
 app = Flask(__name__)
@@ -24,28 +21,7 @@ def get_mapping_from_service(entity_type):
         logger.error(f"Error fetching mapping from service: {str(e)}")
         return {}
 
-def get_mapping_from_file(entity_type):
-    """Try multiple locations to find mapping file"""
-    possible_paths = [
-        f'/service_contacts/mappings/{entity_type}_mapping.json',
-        f'/app/mappings/contacts/{entity_type}_mapping.json', 
-        f'/app/mappings/{entity_type}_mapping.json'
-    ]
-    
-    for mapping_path in possible_paths:
-        try:
-            logger.info(f"Trying to load mapping from: {mapping_path}")
-            if os.path.exists(mapping_path):
-                with open(mapping_path, 'r') as f:
-                    mapping_rules = json.load(f)
-                logger.info(f"✅ Successfully loaded mapping from {mapping_path}")
-                return mapping_rules
-            else:
-                logger.info(f"❌ File not found: {mapping_path}")
-        except Exception as e:
-            logger.error(f"❌ Error reading {mapping_path}: {str(e)}")
-    logger.error(f"❌ Could not find mapping file for {entity_type} in any location")
-    return {}
+
 
 @app.route('/transform', methods=['POST'])
 def transform_data():
@@ -59,19 +35,11 @@ def transform_data():
         data = request_data.get('data', [])
         entity_type = request_data.get('entity_type', '')
         
-        logger.info(f"=== TRANSFORM REQUEST ===")
-        logger.info(f"Entity type: {entity_type}")
-        logger.info(f"Data count: {len(data)}")
-        
         if not entity_type:
             return jsonify({"error": "entity_type is required"}), 400
         
-        # Try to get mapping from file first, then from service
-        mapping_rules = get_mapping_from_file(entity_type)
-        
-        if not mapping_rules:
-            logger.warning(f"No mapping found in files for {entity_type}, trying mapping service...")
-            mapping_rules = get_mapping_from_service(entity_type)
+       
+        mapping_rules = get_mapping_from_service(entity_type)
         
         if not mapping_rules:
             error_msg = f"No mapping rules found for entity type: {entity_type}"
@@ -87,9 +55,6 @@ def transform_data():
         logger.error(f"Error in transform: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "ok", "service": "transform"})
 
 def transform_using_mapping(data, mapping_rules, entity_type):
     result = {}
@@ -124,7 +89,6 @@ def transform_using_mapping(data, mapping_rules, entity_type):
     if entity_type == 'contact':
         result['contacts'] = transformed_items
     else:
-        # Generic fallback
         result[f"{entity_type}s"] = transformed_items
     return result
 

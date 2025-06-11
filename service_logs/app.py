@@ -56,7 +56,6 @@ def get_logs():
         
         return jsonify({
             'status': 'success',
-            'count': len(logs),
             'logs': logs
         })
     except Exception as e:

@@ -32,7 +32,7 @@ class ContactService:
             
             # Step 2: Transform contacts  
             track_api_call(tracker, "service_contacts", "service_transformer", "transform_data")
-            
+
             transformed_data = self._transform_contacts(contacts)
             
             # Step 3: Send to HubSpot
@@ -117,12 +117,8 @@ class ContactService:
         """Transform contact using the transformation service"""
         url, headers, payload = self._build_transform_request(contacts)
 
-        try:
-            self.logger.info(f"Transform request payload: {payload}")
-        
+        try:        
             response = requests.post(url, headers=headers, json=payload)
-            self.logger.info(f"Transform response status: {response.status_code}")
-            self.logger.info(f"Transform response text: {response.text}")
             
             if response.status_code != 200:
                 raise Exception(f"Transform service error: {response.text}")

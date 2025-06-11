@@ -28,17 +28,6 @@ class ConnectService:
             }
         }
 
-    def get_available_targets(self):
-        """Get list of available proxy targets"""
-        targets_info = {}
-        for name, config in self.targets.items():
-            targets_info[name] = {
-                "description": config.get("description", f"{name.title()} API"),
-                "base_url": config["base_url"],
-                "auth_type": config.get("auth_type", "none")
-            }
-        return targets_info
-
     def proxy_request(self, target, endpoint, method, headers, data, params=None):
         """Proxy a request to an external service"""
 
