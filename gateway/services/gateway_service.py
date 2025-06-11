@@ -34,7 +34,6 @@ class GatewayService:
         if service not in self.services:
             self.logger.warning(f"Service not found: {service}")
             raise ValueError(f"Service '{service}' not found")
-        
         return service
     
     def _build_service_url(self, service, route):
@@ -44,23 +43,16 @@ class GatewayService:
     def _forward_request(self, service_url, method, data, headers=None):
         """Forward the request to the target service"""
         try:
-            self.logger.info(f"Forwarding {method} request to {service_url}")
             
             # Prepare headers
             if headers is None:
                 headers = {}
             
-            # Filter out problematic headers
-            filtered_headers = {}
-            for key, value in headers.items():
-                if key.lower() not in ['host', 'content-length']:
-                    filtered_headers[key] = value
-            
             # Make the request
             resp = requests.request(
                 method=method,
                 url=service_url,
-                headers=filtered_headers,
+                headers=headers,
                 data=data,
                 timeout=30
             )
@@ -79,4 +71,4 @@ class GatewayService:
             raise Exception(f"Service communication error: {str(e)}")
         except Exception as e:
             self.logger.error(f"Unexpected error in request forwarding: {str(e)}")
-            raise
+            raise 

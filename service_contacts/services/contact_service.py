@@ -32,6 +32,7 @@ class ContactService:
             
             # Step 2: Transform contacts  
             track_api_call(tracker, "service_contacts", "service_transformer", "transform_data")
+            
             transformed_data = self._transform_contacts(contacts)
             
             # Step 3: Send to HubSpot

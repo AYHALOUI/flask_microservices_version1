@@ -31,7 +31,7 @@ def gateway_router(service, route):
             route=route,
             method=request.method,
             data=request.get_data(),
-            headers=dict(request.headers)
+            headers=headers
         )
 
         # Track response back to client

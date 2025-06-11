@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, Response
 import logging
 from services.connect_service import ConnectService
-from shared.debugger_client import log_to_debugger
 
 connect_bp = Blueprint('connect', __name__)
 logger = logging.getLogger(__name__)
@@ -22,7 +21,6 @@ def proxy_request(target, endpoint):
     """
     try:
 
-        
         response = connect_service.proxy_request(
             target=target,
             endpoint=endpoint,

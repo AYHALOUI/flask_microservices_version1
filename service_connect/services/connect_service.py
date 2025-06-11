@@ -17,16 +17,14 @@ class ConnectService:
         """Load target configurations from environment variables"""
         return {
             "oggo": {
-                "base_url": os.environ.get("OGGO_BASE_URL", "http://mock-external-apis:5000"),
+                "base_url": os.environ.get("OGGO_BASE_URL"),
                 "auth_type": "bearer",
-                "auth_key": os.environ.get("OGGO_API_KEY", "mock-oggo-key"),
-                "description": "Oggo CRM API"
+                "auth_key": os.environ.get("OGGO_API_KEY"),
             },
             "hubspot": {
-                "base_url": os.environ.get("HUBSPOT_BASE_URL", "http://mock-external-apis:5000"),
+                "base_url": os.environ.get("HUBSPOT_BASE_URL"),
                 "auth_type": "bearer", 
-                "auth_key": os.environ.get("HUBSPOT_API_KEY", "mock-hubspot-key"),
-                "description": "HubSpot CRM API"
+                "auth_key": os.environ.get("HUBSPOT_API_KEY"),
             }
         }
 
@@ -78,44 +76,20 @@ class ConnectService:
     def _build_target_url(self, target, endpoint):
         """Build the target URL from the configuration"""
         target_config = self.targets[target]
-        base_url = target_config["base_url"].rstrip('/')
-        endpoint = endpoint.lstrip('/')
+        base_url = target_config["base_url"]
         return f"{base_url}/{endpoint}"
 
     def _prepare_headers(self, target, original_headers):
         """Prepare headers for the proxied request, including authentication"""
-        # Filter out problematic headers
         headers = {
             key: value for key, value in original_headers.items() 
             if key.lower() not in ['host', 'content-length']
-        }
-        
-        # Add authentication
-        target_config = self.targets[target]
-        auth_type = target_config.get('auth_type')
-        auth_key = target_config.get('auth_key')
-        
-        if auth_type == 'bearer' and auth_key:
-            headers['Authorization'] = f"Bearer {auth_key}"
-        elif auth_type == 'apikey' and auth_key:
-            headers['X-API-Key'] = auth_key
-        elif auth_type == 'basic' and auth_key:
-            headers['Authorization'] = f"Basic {auth_key}"
-            
-        # Ensure content-type is set for POST/PUT requests
-        if 'content-type' not in [k.lower() for k in headers.keys()]:
-            headers['Content-Type'] = 'application/json'
-            
+        }        
         return headers
 
     def _execute_proxy_request(self, method, url, headers, data, params=None):
         """Execute the proxy request and handle errors"""
         try:
-            self.logger.info(f"Proxying {method} request to {url}")
-            
-            # Record API call for monitoring
-            start_time = time.time()
-            
             response = requests.request(
                 method=method,
                 url=url,
@@ -124,31 +98,17 @@ class ConnectService:
                 params=params,
                 timeout=30
             )
-            
-            response_time = round((time.time() - start_time) * 1000, 2)
-            
-            
+             
             # Create Flask response that preserves original response
             flask_response = Response(
                 response.content,
                 status=response.status_code,
                 headers=dict(response.headers)
             )
-            
             return flask_response
-            
-        except requests.Timeout as e:
-            self.logger.error(f"Request timeout for {url}: {str(e)}")
-            raise Exception(f"Request timeout: {str(e)}")
-            
-        except requests.ConnectionError as e:
-            self.logger.error(f"Connection error for {url}: {str(e)}")
-            raise Exception(f"Connection error: {str(e)}")
-            
-        except requests.RequestException as e:
-            self.logger.error(f"Request failed for {url}: {str(e)}")
-            raise Exception(f"Request failed: {str(e)}")
-            
+        except (requests.Timeout, requests.ConnectionError, requests.RequestException) as e:
+            self.logger.error(f"Request error for {url}: {str(e)}")
+            raise Exception(f"Request error: {str(e)}")
         except Exception as e:
             self.logger.error(f"Unexpected error proxying request to {url}: {str(e)}")
             raise Exception(f"Proxy error: {str(e)}")

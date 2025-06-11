@@ -28,7 +28,6 @@ services:
     environment:
       - SERVICE_TRANSFORM=http://service_transformer:5000
       - SERVICE_CONNECT=http://service_connect:5000
-      - QUEUE_SERVICE_URL=http://service_queue:5000
     volumes:
       - ./service_contacts:/app
       - ./shared:/app/shared
@@ -71,7 +70,6 @@ services:
       - ./shared:/app/shared
       - ./service_contacts:/service_contacts
       - ./service_projects:/service_projects  
-      - ./service_contracts:/service_contracts
     ports:
       - "5002:5000"
     networks:
@@ -120,7 +118,6 @@ services:
       - ./service_mapping:/app
       - ./service_contacts:/service_contacts
       - ./service_projects:/service_projects
-      - ./service_contracts:/service_contracts
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "5004:5000"

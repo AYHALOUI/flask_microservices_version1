@@ -6,6 +6,7 @@ import uuid
 logger = logging.getLogger(__name__)
 
 class FlowTracker:
+
     def __init__(self, request_id=None):
         self.request_id = request_id or str(uuid.uuid4())[:8]
     
@@ -19,7 +20,6 @@ class FlowTracker:
                 "from_service": from_service,
                 "to_service": to_service,
                 "action": action,
-                "request_id": self.request_id,
                 "timestamp": time.time()
             }
             

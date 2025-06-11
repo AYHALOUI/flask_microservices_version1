@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 import logging
 from services.project_service import ProjectService
-from shared.debugger_client import log_to_debugger
 
 
 project_bp = Blueprint('project', __name__)

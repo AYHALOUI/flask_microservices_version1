@@ -2,7 +2,6 @@ import logging
 import os
 import requests
 import json
-import time
 
 class ProjectService:
     """Service class for handling project operations"""

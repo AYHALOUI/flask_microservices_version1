@@ -29,7 +29,7 @@
   "customer_type": "properties.customer_segment",
   "department": "properties.department",
   "device_type": "properties.device_category",
-  "email": "properties.email",
+  "email": "properties.email011",
   "email_clicks": "properties.email_click_rate",
   "email_opens": "properties.email_open_rate",
   "email_secondary": "properties.hs_additional_emails",
