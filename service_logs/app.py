@@ -22,7 +22,6 @@ def store_log():
         # Add timestamp if not present
         if 'timestamp' not in log_data:
             log_data['timestamp'] = time.time()
-        
         # Store in TinyDB
         db.insert(log_data)
         
@@ -53,7 +52,6 @@ def get_logs():
         # Sort by timestamp (newest first) and limit
         logs.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
         logs = logs[:limit]
-        
         return jsonify({
             'status': 'success',
             'logs': logs
