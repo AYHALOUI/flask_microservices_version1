@@ -156,7 +156,6 @@
     <div class="controls">
         <button class="btn btn-primary" onclick="location.reload()">🔄 Refresh</button>
         <button class="btn btn-danger" onclick="clearLogs()">🗑️ Clear All</button>
-        <span class="stats">Total flows: {{ logs|length }}</span>
     </div>
     
     <div class="log-list">
@@ -201,39 +200,7 @@
             }
         }
         
-        function showErrorsOnly() {
-            // Hide all request groups that don't contain errors
-            document.querySelectorAll('.request-group').forEach(group => {
-                const hasError = group.textContent.includes('ERROR') || 
-                            group.textContent.includes('❌') ||
-                            group.textContent.includes('error') ||
-                            group.textContent.includes('failed') ||
-                            group.textContent.includes('Failed') ||
-                            group.textContent.includes('Error');  // ADD THIS LINE
-                
-                if (hasError) {
-                    group.style.display = 'block';
-                    // Add error styling
-                    group.classList.add('error-group');
-                    const header = group.querySelector('.request-header');
-                    if (header) {
-                        header.classList.add('error-header');
-                        if (!header.textContent.includes('❌')) {
-                            header.innerHTML = '❌ ERROR DETECTED: ' + header.innerHTML;
-                        }
-                    }
-                } else {
-                    group.style.display = 'none';
-                }
-            });
-            
-            // Change button text to show it's filtered
-            const button = event.target;
-            if (button.textContent.includes('Errors Only')) {
-                button.textContent = '🔄 Show All';
-                button.onclick = () => location.reload();
-            }
-        }
+        
     </script>
 </body>
 </html>

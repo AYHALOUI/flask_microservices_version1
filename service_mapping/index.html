@@ -199,13 +199,6 @@
         <div style="margin-top: 30px; text-align: center;">
             <button class="save-btn" onclick="saveMapping()">💾 Save All Settings</button>
         </div>
-
-        <!-- <div id="test-section" style="margin-top: 30px;">
-            <h3>Test Your Mapping</h3>
-            <p>See how your data will look after transformation</p>
-            <button onclick="testMapping()" class="btn btn-info">🔍 Test with Sample Data</button>
-            <div id="test-results" style="margin-top: 15px; display: none;"></div>
-        </div> -->
     </div>
 
     <script>
@@ -460,7 +453,7 @@
             .then(data => {
                 console.log('Save response:', data);
                 if (data.status === 'success') {
-                    alert(`✅ Successfully saved ${rulesCount} mapping rules for ${entityType}!`);
+                    alert(`Successfully saved ${rulesCount} mapping rules for ${entityType}!`);
                 } else {
                     alert(`Error saving: ${data.error || 'Unknown error'}`);
                 }
@@ -470,38 +463,6 @@
                 alert('Error saving: ' + err.message);
             });
         }
-
-        // Test mapping function (placeholder)
-        // function testMapping() {
-        //     const entityType = document.getElementById('entity-type').value;
-        //     if (!entityType) {
-        //         alert('Please select an entity type first');
-        //         return;
-        //     }
-            
-        //     const rules = {};
-        //     document.querySelectorAll('.mapping-rule').forEach(rule => {
-        //         const sourceField = rule.querySelector('.source-field').value.trim();
-        //         const targetField = rule.querySelector('.target-field').value.trim();
-        //         if (sourceField && targetField) {
-        //             rules[sourceField] = targetField;
-        //         }
-        //     });
-            
-        //     if (Object.keys(rules).length === 0) {
-        //         alert('Please add some mapping rules first');
-        //         return;
-        //     }
-            
-        //     // Show a preview of the mapping
-        //     const preview = Object.entries(rules).map(([source, target]) => 
-        //         `${source} → ${target}`
-        //     ).join('\n');
-            
-        //     alert(`Mapping Preview for ${entityType}:\n\n${preview}\n\nThis shows how your source fields will be mapped to destination fields.`);
-        // }
-
-        // Initialize when page loads
         window.onload = function() {
             loadEntityTypes();
         };
