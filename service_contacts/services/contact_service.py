@@ -3,7 +3,7 @@ import os
 import requests
 import json
 from flask import request
-from shared.debugger_client import track_api_call, track_response, FlowTracker
+from shared.debugger_client import track_api_call, track_error, FlowTracker
 
 
 class ContactService:
@@ -32,13 +32,12 @@ class ContactService:
             
             # Step 2: Transform contacts  
             track_api_call(tracker, "service_contacts", "service_transformer", "transform_data")
-
             transformed_data = self._transform_contacts(contacts)
             
             # Step 3: Send to HubSpot
             track_api_call(tracker, "service_contacts", "service_connect", "send_to_hubspot")    
-
             hubspot_response = self._send_to_hubspot(transformed_data)
+
             return {
                 "status": "success",
                 "data": transformed_data,
@@ -46,8 +45,8 @@ class ContactService:
             }
             
         except Exception as e:
-            self.logger.error(f"Exception caught: {str(e)}")
-            self.logger.error(f"Exception type: {type(e)}")
+            # ADD JUST THIS ONE LINE FOR ERROR TRACKING:
+            track_error(tracker, "service_contacts", str(e), f"Params: {params}")
             raise e
         
 
@@ -104,7 +103,6 @@ class ContactService:
             return contacts
         except requests.RequestException as e:
             error_msg = f"Failed to fetch contacts from Oggo: {str(e)}"
-            self.logger.error(error_msg)
             raise Exception(error_msg)
     
     def _build_oggo_request(self):

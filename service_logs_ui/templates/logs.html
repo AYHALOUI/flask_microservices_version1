@@ -58,6 +58,22 @@
             border-radius: 3px;
         }
         
+        /* Error styling */
+        .error-log {
+            background: #fff5f5 !important;
+            border-left: 4px solid #dc3545 !important;
+        }
+        
+        .error-group {
+            border: 2px solid #dc3545 !important;
+            background: #fff5f5 !important;
+        }
+        
+        .error-header {
+            background: #f8d7da !important;
+            border-left: 4px solid #dc3545 !important;
+        }
+        
         .time {
             min-width: 80px;
             font-family: monospace;
@@ -102,6 +118,7 @@
         
         .btn-primary { background: #007bff; color: white; }
         .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
         
         .stats {
             color: #666;
@@ -118,6 +135,15 @@
         .request-summary {
             font-size: 12px;
             color: #6c757d;
+            margin-left: 10px;
+        }
+        
+        .error-badge {
+            background: #dc3545;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
             margin-left: 10px;
         }
     </style>
@@ -172,6 +198,40 @@
             if (confirm('Clear all logs?')) {
                 fetch('/clear', {method: 'POST'})
                 .then(() => location.reload());
+            }
+        }
+        
+        function showErrorsOnly() {
+            // Hide all request groups that don't contain errors
+            document.querySelectorAll('.request-group').forEach(group => {
+                const hasError = group.textContent.includes('ERROR') || 
+                            group.textContent.includes('❌') ||
+                            group.textContent.includes('error') ||
+                            group.textContent.includes('failed') ||
+                            group.textContent.includes('Failed') ||
+                            group.textContent.includes('Error');  // ADD THIS LINE
+                
+                if (hasError) {
+                    group.style.display = 'block';
+                    // Add error styling
+                    group.classList.add('error-group');
+                    const header = group.querySelector('.request-header');
+                    if (header) {
+                        header.classList.add('error-header');
+                        if (!header.textContent.includes('❌')) {
+                            header.innerHTML = '❌ ERROR DETECTED: ' + header.innerHTML;
+                        }
+                    }
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+            
+            // Change button text to show it's filtered
+            const button = event.target;
+            if (button.textContent.includes('Errors Only')) {
+                button.textContent = '🔄 Show All';
+                button.onclick = () => location.reload();
             }
         }
     </script>

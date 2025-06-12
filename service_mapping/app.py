@@ -10,7 +10,17 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
-
+@app.route('/api/entity-types', methods=['GET'])
+def get_entity_types():
+    """Return available entity types for mapping"""
+    try:
+        entity_types = [
+            {"value": "contact", "label": "Contacts"},
+            {"value": "project", "label": "Projects"},
+        ]
+        return jsonify({"entity_types": entity_types})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 def get_service_mapping_directory(entity_type):
     """Get the correct service directory path for an entity type"""
