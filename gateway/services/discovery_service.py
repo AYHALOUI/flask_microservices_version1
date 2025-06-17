@@ -11,25 +11,14 @@ class DiscoveryService:
     def initialize_services(self):
         """Initialize the services dictionary from Docker or environment variables"""
         services = {}
-        
         # Try Docker discovery first
         try:
-            self.logger.info("Attempting service discovery via Docker API...")
             services = self._discover_services_via_docker()
-            self.logger.info(f"Discovered services: {services}")
         except Exception as e:
             self.logger.error(f"Docker service discovery failed: {str(e)}")
         
-        # If Docker discovery yielded no results, use env vars
         if not services:
-            self.logger.info("Using environment variables for services...")
-            services = self._get_services_from_env()
-        
-        if not services:
-            self.logger.warning("No services discovered! Gateway will be unable to route requests.")
-        else:
-            self.logger.info(f"Successfully initialized with {len(services)} services")
-        
+            services = self._get_services_from_env()        
         return services
     
     def _discover_services_via_docker(self):
@@ -61,14 +50,11 @@ class DiscoveryService:
                             services[simplified_name.lower()] = f'http://{ip}:5000'
                             # Also add the original name to avoid confusion
                             services[service_name.lower()] = f'http://{ip}:5000'
-                            
-                            self.logger.debug(f"Discovered service: {service_name} at {ip}")
                             break
             
             return services
             
         except Exception as e:
-            self.logger.error(f"Failed to discover services via Docker: {str(e)}")
             return {}
     
     def _get_services_from_env(self):

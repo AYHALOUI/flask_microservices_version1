@@ -9,6 +9,14 @@ app = Flask(__name__)
 LOGS_SERVICE_URL = "http://service_logs:5000"
 
 
+@app.template_filter('timestamp_to_time')
+def timestamp_to_time(timestamp):
+    """Convert timestamp to readable time"""
+    try:
+        return datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')
+    except:
+        return "00:00:00"
+
 @app.route('/', methods=['GET'])
 def logs_ui():
     """Main logs viewing page"""
@@ -35,7 +43,7 @@ def logs_ui():
             grouped_logs = []
             current_group = []
             
-            for log in reversed(logs):  # Process in chronological order
+            for log in reversed(logs):
                 if 'timestamp' in log:
                     try:
                         adjusted_timestamp = log['timestamp'] + 3600
@@ -71,15 +79,6 @@ def clear_logs():
             return jsonify({'error': 'Failed to clear logs'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@app.template_filter('timestamp_to_time')
-def timestamp_to_time(timestamp):
-    """Convert timestamp to readable time"""
-    try:
-        return datetime.fromtimestamp(timestamp).strftime('%H:%M:%S')
-    except:
-        return "00:00:00"
 
 
 if __name__ == '__main__':

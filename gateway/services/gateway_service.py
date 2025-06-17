@@ -1,6 +1,6 @@
 import logging
 import requests
-from flask import Response, jsonify
+from flask import Response
 from services.discovery_service import DiscoveryService
 
 
@@ -67,8 +67,6 @@ class GatewayService:
             return response
             
         except requests.RequestException as e:
-            self.logger.error(f"Service communication error: {str(e)}")
             raise Exception(f"Service communication error: {str(e)}")
         except Exception as e:
-            self.logger.error(f"Unexpected error in request forwarding: {str(e)}")
             raise 

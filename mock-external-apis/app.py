@@ -1,13 +1,9 @@
 from flask import Flask, request, jsonify
-import os
 import logging
-import time
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
 
 # Mock data - contacts
 contacts = [
@@ -75,9 +71,6 @@ projects = [
 ]
 
 
-
-
-
 # Contacts endpoints
 @app.route('/contacts', methods=['GET'])
 def get_contacts():
@@ -96,13 +89,10 @@ def get_projects():
 
 
 # ===== HUBSPOT API ROUTES =====
-
 # Contacts (HubSpot format)
 @app.route('/crm/v3/objects/contacts/batch/create', methods=['POST'])
 def create_hubspot_contacts():
-    """Create contacts in HubSpot format"""
-    logger.info('HubSpot API: POST /crm/v3/objects/contacts/batch/create')
-    
+    """Create contacts in HubSpot format""" 
     try:
         # Get the input data
         inputs = request.json.get('inputs', [])
@@ -124,7 +114,6 @@ def create_hubspot_contacts():
         })
         
     except Exception as e:
-        logger.error(f"Error in HubSpot contacts mock: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 # Projects in HubSpot
@@ -155,38 +144,6 @@ def create_hubspot_deals():
     except Exception as e:
         logger.error(f"Error in HubSpot deals mock: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
-@app.route('/crm/v3/objects/contacts', methods=['GET'])
-def get_oggo_contacts():
-    """Get contacts in HubSpot format"""
-    logger.info('HubSpot API: GET /crm/v3/objects/contacts')
-    
-    # Transform local contacts to HubSpot format
-    hubspot_contacts = []
-    for contact in contacts:
-        # Handle different formats of contacts (from Oggo vs from HubSpot)
-        if 'properties' in contact:
-            # Already in HubSpot format
-            hubspot_contacts.append(contact)
-        else:
-            # Convert from Oggo format to HubSpot format
-            hubspot_contact = {
-                'id': contact['id'],
-                'properties': {
-                    'firstname': contact.get('first_name', ''),
-                    'lastname': contact.get('last_name', ''),
-                    'email': contact.get('email', ''),
-                    'phone': contact.get('phone', ''),
-                    'company': contact.get('company', ''),
-                    'created_date': contact.get('created_at', ''),
-                    'last_modified_date': contact.get('updated_at', '')
-                }
-            }
-            hubspot_contacts.append(hubspot_contact)
-    
-    return jsonify({
-        'results': hubspot_contacts
-    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

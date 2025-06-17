@@ -1,8 +1,7 @@
 import logging
 import os
 import requests
-import time
-from flask import Response, jsonify
+from flask import Response
 from shared.debugger_client import FlowTracker, track_api_call, track_response
 
 
@@ -96,8 +95,6 @@ class ConnectService:
             )
             return flask_response
         except (requests.Timeout, requests.ConnectionError, requests.RequestException) as e:
-            self.logger.error(f"Request error for {url}: {str(e)}")
             raise Exception(f"Request error: {str(e)}")
         except Exception as e:
-            self.logger.error(f"Unexpected error proxying request to {url}: {str(e)}")
             raise Exception(f"Proxy error: {str(e)}")

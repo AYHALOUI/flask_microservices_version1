@@ -1,6 +1,5 @@
 from flask import Flask
 import logging
-import os
 from blueprints.connect_blueprint import connect_bp
 
 def create_app():

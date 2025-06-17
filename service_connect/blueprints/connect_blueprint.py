@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify
 import logging
 from services.connect_service import ConnectService
 
@@ -7,8 +7,6 @@ logger = logging.getLogger(__name__)
 
 # Initialize services
 connect_service = ConnectService()
-
-
 
 @connect_bp.route('/proxy/<target>/<path:endpoint>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 def proxy_request(target, endpoint):

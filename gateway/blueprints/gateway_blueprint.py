@@ -36,7 +36,6 @@ def gateway_router(service, route):
 
         # Track response back to client
         track_response(tracker, "gateway", "external_client")
-
         return response
         
     except Exception as e:        

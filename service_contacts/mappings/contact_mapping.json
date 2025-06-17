@@ -43,7 +43,7 @@
   "field_with_numbers_123": "properties.numeric_field_123",
   "field_with_underscores": "properties.underscore_field",
   "first_conversion": "properties.first_conversion_date",
-  "first_name": "properties.first000Name",
+  "first_name": "properties.first_namefirst_name01",
   "full_name": "properties.full_name_display",
   "gdpr_consent": "properties.gdpr_compliance_status",
   "github_username": "properties.github_profile",
