@@ -27,8 +27,9 @@ class ConnectService:
             }
         }
 
+    
     def proxy_request(self, target, endpoint, method, headers, data, params=None):
-        """Proxy a request to an external service"""
+        """Proxy a request to an external service with enhanced tracking"""
 
          # Get request ID from headers if available
         request_id = headers.get('X-Request-ID')
@@ -46,10 +47,26 @@ class ConnectService:
         # Track outgoing API call to external service
         track_api_call(tracker, "service_connect", f"external_{target}", f"api_call")
         
-        resposne = self._execute_proxy_request(method, target_url, prepared_headers, data, params)
+        response = self._execute_proxy_request(method, target_url, prepared_headers, data, params)
 
         # Track response from external service
         track_response(tracker, f"external_{target}", "service_connect")
+        
+        # NEW: Track sending response back to calling service
+        calling_service = self._detect_calling_service(headers, endpoint)
+        track_api_call(tracker, "service_connect", calling_service, f"response_to_{calling_service}")
+
+        return response
+
+    def _detect_calling_service(self, headers, endpoint):
+        """Detect which service called us based on headers or endpoint"""
+        # You can detect this from headers, endpoint patterns, etc.
+        if 'contacts' in endpoint.lower():
+            return "service_contacts"
+        elif 'projects' in endpoint.lower():
+            return "service_projects"
+        else:
+            return "service_unknown"
 
         return resposne
 

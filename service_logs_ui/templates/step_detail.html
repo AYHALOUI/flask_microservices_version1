@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Step Details - {{ step_info.action }} | Request #{{ step_info.request_id }}</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .breadcrumb {
+            margin-bottom: 10px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .breadcrumb a {
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.8;
+        }
+        
+        .breadcrumb a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .step-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-item h4 {
+            margin: 0 0 5px 0;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-item p {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .flow-badge {
+            background: linear-gradient(135deg, #007bff, #28a745);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .step-badge {
+            background: #6c757d;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .tabs {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .tab-button.active {
+            background: white;
+            color: #28a745;
+            border-bottom: 3px solid #28a745;
+        }
+        
+        .tab-button:hover:not(.active) {
+            background: #e9ecef;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .json-key {
+            color: #63b3ed;
+        }
+        
+        .json-string {
+            color: #68d391;
+        }
+        
+        .json-number {
+            color: #fbb6ce;
+        }
+        
+        .json-boolean {
+            color: #fbd38d;
+        }
+        
+        .json-null {
+            color: #a0aec0;
+        }
+        
+        .details-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .detail-item {
+            background: white;
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .nav-button {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .nav-button:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .nav-button.disabled {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .nav-button.primary {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .error-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 40px;
+        }
+        
+        .step-number {
+            background: #28a745;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="breadcrumb">
+            <a href="/">← Request List</a> • 
+            <a href="/request/{{ step_info.request_id }}">Request #{{ step_info.request_id }}</a> • 
+            Step {{ step_info.step_index }}
+        </div>
+        <h1>🔍 Step Details</h1>
+        <p>
+            <span class="step-number">{{ step_info.step_index }}</span>
+            {{ step_info.from_service|replace('service_', '')|replace('external_', '')|title }} → 
+            {{ step_info.to_service|replace('service_', '')|replace('external_', '')|title }}
+        </p>
+    </div>
+    
+    <div class="step-summary">
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h4>Action</h4>
+                <p>{{ step_info.action|replace('_', ' ')|title }}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Timestamp</h4>
+                <p>{{ step_info.formatted_datetime }}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Flow</h4>
+                <p>
+                    <span class="flow-badge">
+                        {{ step_info.from_service|replace('service_', '')|replace('external_', '')|title }} → 
+                        {{ step_info.to_service|replace('service_', '')|replace('external_', '')|title }}
+                    </span>
+                </p>
+            </div>
+            <div class="summary-item">
+                <h4>Step Progress</h4>
+                <p>
+                    <span class="step-badge">{{ step_info.step_index }} of {{ step_info.total_steps }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab-nav">
+            <button class="tab-button active" onclick="showTab('overview')">📋 Overview</button>
+            <button class="tab-button" onclick="showTab('request')">📤 Request Data</button>
+            <button class="tab-button" onclick="showTab('response')">📥 Response Data</button>
+            <button class="tab-button" onclick="showTab('context')">🔧 Context & Debug</button>
+        </div>
+        
+        <div id="overview-tab" class="tab-content active">
+            <h3>Step Overview</h3>
+            <div class="info-box">
+                <strong>Action:</strong> {{ step_info.action|replace('_', ' ')|title }}<br>
+                <strong>Message:</strong> {{ step_info.message or 'No message available' }}<br>
+                <strong>Level:</strong> {{ step_info.level|upper }}<br>
+                <strong>Time:</strong> {{ step_info.formatted_time }}
+            </div>
+            
+            {% if step_info.details %}
+            <h4>📝 Enhanced Details</h4>
+            <div class="details-list">
+                {% for detail in step_info.details %}
+                <div class="detail-item">{{ detail }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div id="request-tab" class="tab-content">
+            <h3>Request Data</h3>
+            {% if request_data.method or request_data.endpoint or request_data.payload %}
+            <div class="info-box">
+                <strong>📤 Outgoing Request Information:</strong> Data sent from this step.
+            </div>
+            
+            <div class="json-viewer">
+{
+{% if request_data.method %}
+  <span class="json-key">"method"</span>: <span class="json-string">"{{ request_data.method }}"</span>,
+{% endif %}
+{% if request_data.endpoint %}
+  <span class="json-key">"endpoint"</span>: <span class="json-string">"{{ request_data.endpoint }}"</span>,
+{% endif %}
+{% if request_data.headers %}
+  <span class="json-key">"headers"</span>: {{ request_data.headers|tojson(indent=2)|safe }},
+{% endif %}
+{% if request_data.params %}
+  <span class="json-key">"params"</span>: {{ request_data.params|tojson(indent=2)|safe }},
+{% endif %}
+{% if request_data.payload %}
+  <span class="json-key">"payload"</span>: {{ request_data.payload|tojson(indent=2)|safe }}
+{% endif %}
+}
+            </div>
+            {% else %}
+            <div class="no-data">
+                💭 No request data captured for this step
+            </div>
+            {% endif %}
+        </div>
+        
+        <div id="response-tab" class="tab-content">
+            <h3>Response Data</h3>
+            {% if response_data.status_code or response_data.response or response_data.response_time_ms %}
+            <div class="info-box">
+                <strong>📥 Incoming Response Information:</strong> Data received by this step.
+            </div>
+            
+            <div class="json-viewer">
+{
+{% if response_data.status_code %}
+  <span class="json-key">"status_code"</span>: <span class="json-number">{{ response_data.status_code }}</span>,
+{% endif %}
+{% if response_data.response_time_ms %}
+  <span class="json-key">"response_time_ms"</span>: <span class="json-number">{{ response_data.response_time_ms }}</span>,
+{% endif %}
+{% if response_data.headers %}
+  <span class="json-key">"headers"</span>: {{ response_data.headers|tojson(indent=2)|safe }},
+{% endif %}
+{% if response_data.response %}
+  <span class="json-key">"response_data"</span>: {{ response_data.response|tojson(indent=2)|safe }}
+{% endif %}
+}
+            </div>
+            {% else %}
+            <div class="no-data">
+                💭 No response data captured for this step
+            </div>
+            {% endif %}
+        </div>
+        
+        <div id="context-tab" class="tab-content">
+            <h3>Context & Debug Information</h3>
+            {% if context_data.context or context_data.error or context_data.additional_data %}
+            <div class="warning-box">
+                <strong>🔧 Debug Information:</strong> Additional context and error details.
+            </div>
+            
+            {% if context_data.error %}
+            <div class="error-box">
+                <strong>❌ Error Details:</strong><br>
+                {{ context_data.error }}
+            </div>
+            {% endif %}
+            
+            <div class="json-viewer">
+{
+{% if context_data.context %}
+  <span class="json-key">"context"</span>: {{ context_data.context|tojson(indent=2)|safe }},
+{% endif %}
+{% if context_data.stack_trace %}
+  <span class="json-key">"stack_trace"</span>: <span class="json-string">"{{ context_data.stack_trace }}"</span>,
+{% endif %}
+{% if context_data.additional_data %}
+  <span class="json-key">"additional_data"</span>: {{ context_data.additional_data|tojson(indent=2)|safe }}
+{% endif %}
+}
+            </div>
+            {% else %}
+            <div class="no-data">
+                💭 No additional context available for this step
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="navigation">
+        <div>
+            {% if navigation.has_previous %}
+            <a href="/request/{{ step_info.request_id }}/step/{{ navigation.previous_step }}" class="nav-button">
+                ← Previous Step
+            </a>
+            {% else %}
+            <span class="nav-button disabled">← Previous Step</span>
+            {% endif %}
+        </div>
+        
+        <div>
+            <a href="/request/{{ step_info.request_id }}" class="nav-button primary">
+                📊 Back to Flow Overview
+            </a>
+        </div>
+        
+        <div>
+            {% if navigation.has_next %}
+            <a href="/request/{{ step_info.request_id }}/step/{{ navigation.next_step }}" class="nav-button">
+                Next Step →
+            </a>
+            {% else %}
+            <span class="nav-button disabled">Next Step →</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Hide all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

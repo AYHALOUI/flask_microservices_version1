@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import logging
 import requests
+from shared.debugger_client import track_api_call, track_error, FlowTracker
+
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +29,10 @@ def get_mapping_from_service(entity_type):
 def transform_data():
     try:
         request_data = request.json
+        
+        # Get request ID for tracking
+        request_id = request.headers.get('X-Request-ID')
+        tracker = FlowTracker(request_id)
 
         if not request_data:
             return jsonify({"error": "No data provided"}), 400
@@ -38,16 +44,28 @@ def transform_data():
         if not entity_type:
             return jsonify({"error": "entity_type is required"}), 400
         
-       
+        # Track starting transformation process
+        track_api_call(tracker, "service_transformer", "internal", "start_transformation")
+        
+        # Track getting mapping from service
+        track_api_call(tracker, "service_transformer", "service_mapping", "get_mapping_rules")
         mapping_rules = get_mapping_from_service(entity_type)
         
         if not mapping_rules:
             error_msg = f"No mapping rules found for entity type: {entity_type}"
             logger.error(error_msg)
             return jsonify({"error": error_msg}), 404
-            
-        # Transform the data
-        transformed_data = transform_using_mapping(data, mapping_rules, entity_type)   
+        
+        # Track transformation process
+        track_api_call(tracker, "service_transformer", "internal", "apply_mapping_rules")
+        transformed_data = transform_using_mapping(data, mapping_rules, entity_type)
+        
+        # Track completion
+        track_api_call(tracker, "service_transformer", "internal", "transformation_completed")
+        
+        # NEW: Track sending response back to calling service
+        calling_service = _detect_calling_service_from_entity(entity_type)
+        track_api_call(tracker, "service_transformer", calling_service, f"response_to_{calling_service}")
 
         return jsonify(transformed_data)
     
@@ -55,6 +73,14 @@ def transform_data():
         logger.error(f"Error in transform: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+def _detect_calling_service_from_entity(entity_type):
+    """Detect calling service from entity type"""
+    if entity_type == 'contact':
+        return "service_contacts"
+    elif entity_type == 'project':
+        return "service_projects"
+    else:
+        return "service_unknown"
 
 def transform_using_mapping(data, mapping_rules, entity_type):
     result = {}

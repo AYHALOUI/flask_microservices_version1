@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Request Details - {{ request_info.request_id }}</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .breadcrumb {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .breadcrumb a {
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.8;
+        }
+        
+        .breadcrumb a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .request-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-item h4 {
+            margin: 0 0 5px 0;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-item p {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .method-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            background: #28a745;
+        }
+        
+        .tabs {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: white;
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+        }
+        
+        .tab-button:hover:not(.active) {
+            background: #e9ecef;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .flow-steps {
+            margin-top: 20px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: flex-start;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            position: relative;
+        }
+        
+        .step.error {
+            background: #fff5f5;
+            border-left-color: #dc3545;
+        }
+        
+        .step-time {
+            min-width: 80px;
+            font-family: monospace;
+            color: #666;
+            font-size: 14px;
+            margin-top: 2px;
+        }
+        
+        .step-flow {
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        .main-flow {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .from-service {
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .to-service {
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .arrow {
+            margin: 0 10px;
+            color: #666;
+        }
+        
+        .action {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #495057;
+            margin-left: 10px;
+        }
+        
+        /* Enhanced details styles */
+        .step-details {
+            margin-left: 20px;
+            margin-top: 8px;
+            border-left: 2px solid #e9ecef;
+            padding-left: 12px;
+        }
+        
+        .detail-item {
+            font-size: 12px;
+            color: #666;
+            margin: 3px 0;
+            background: rgba(0,0,0,0.05);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            line-height: 1.4;
+        }
+        
+        .step.error .detail-item {
+            background: rgba(220, 53, 69, 0.1);
+            color: #721c24;
+        }
+        
+        .detail-item:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        
+        /* Toggle button styles */
+        .detail-toggle-btn {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.2s ease;
+            font-weight: bold;
+            min-width: 60px;
+        }
+        
+        .detail-toggle-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+        }
+        
+        .detail-toggle-btn.active {
+            background: linear-gradient(135deg, #28a745, #20a83a);
+        }
+        
+        .toggle-all-btn {
+            background: linear-gradient(135deg, #6f42c1, #5a2d91);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+        
+        .toggle-all-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(111, 66, 193, 0.3);
+        }
+        
+        .step-details.show {
+            display: block !important;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .step-details.hide {
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                max-height: 200px;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                max-height: 200px;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
+        }
+        
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+        
+        .json-key {
+            color: #63b3ed;
+        }
+        
+        .json-string {
+            color: #68d391;
+        }
+        
+        .json-number {
+            color: #fbb6ce;
+        }
+        
+        .json-boolean {
+            color: #fbd38d;
+        }
+        
+        .back-button {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .view-details-btn {
+            background: linear-gradient(135deg, #fd7e14, #e63946);
+            color: white;
+            text-decoration: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 10px;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+        
+        .view-details-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .detail-toggle-btn {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-left: 5px;
+            transition: all 0.2s ease;
+            font-weight: bold;
+            min-width: 70px;
+        }
+        
+        .detail-toggle-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+        }
+        
+        .detail-toggle-btn.active {
+            background: linear-gradient(135deg, #28a745, #20a83a);
+        }
+        </style>
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="breadcrumb">
+            <a href="/">← Back to Request List</a>
+        </div>
+        <h1>🔍 Request Details</h1>
+        <p>Deep dive into request #{{ request_info.request_id }}</p>
+    </div>
+    
+    <div class="request-summary">
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h4>Request ID</h4>
+                <p style="font-family: monospace;">#{{ request_info.request_id }}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Endpoint</h4>
+                <p>
+                    <span class="method-badge">{{ request_info.method }}</span>
+                    {{ request_info.endpoint }}
+                </p>
+            </div>
+            <div class="summary-item">
+                <h4>Timestamp</h4>
+                <p>{{ request_info.formatted_datetime }}</p>
+            </div>
+            <div class="summary-item">
+                <h4>Total Steps</h4>
+                <p>{{ logs|length }} operations</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab-nav">
+            <button class="tab-button active" onclick="showTab('flow')">🔄 Flow Steps</button>
+            <button class="tab-button" onclick="showTab('payload')">📤 Request Payload</button>
+            <button class="tab-button" onclick="showTab('response')">📥 Response Data</button>
+        </div>
+        
+        <div id="flow-tab" class="tab-content active">
+            <h3>Request Flow Steps</h3>
+            <p>This shows the complete journey of your request through the microservices:</p>
+            
+            <!-- Global toggle button -->
+            <!-- <div style="margin-bottom: 15px;">
+                <button class="toggle-all-btn" onclick="toggleAllDetails()">
+                    <span id="toggle-all-text">📖 Show All Details</span>
+                </button>
+            </div> -->
+            
+            <div class="flow-steps">
+                {% for log in logs %}
+                <div class="step {{ 'error' if 'ERROR' in log.get('to_service', '') or 'error' in log.get('level', '').lower() else '' }}">
+                    <div class="step-time">{{ log.formatted_time }}</div>
+                    <div class="step-flow">
+                        <div class="main-flow">
+                            <span class="from-service">{{ log.from_service|replace('service_', '')|replace('external_', '')|title }}</span>
+                            <span class="arrow">→</span>
+                            <span class="to-service">{{ log.to_service|replace('service_', '')|replace('external_', '')|title }}</span>
+                            <span class="action">{{ log.action|replace('_', ' ')|title }}</span>
+                            
+                            <!-- View Details Link for each step -->
+                            <a href="/request/{{ request_info.request_id }}/step/{{ loop.index }}" class="view-details-btn">
+                                🔍 View Details
+                            </a>
+                            
+                            {% if log.details %}
+                            <!-- <button class="detail-toggle-btn" onclick="toggleDetails(this)" data-step="{{ loop.index }}">
+                                <span class="toggle-text">👁️ Quick View</span>
+                            </button> -->
+                            {% endif %}
+                        </div>
+                        
+                        {% if log.details %}
+                        <div class="step-details" id="details-{{ loop.index }}" style="display: none;">
+                            {% for detail in log.details %}
+                            <div class="detail-item">{{ detail }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div id="payload-tab" class="tab-content">
+            <h3>Request Payload</h3>
+            <div class="info-box">
+                <strong>📤 Incoming Request Data:</strong> This shows the actual data that was sent with the request.
+            </div>
+            
+            <div class="json-viewer">
+                <span class="json-key">"method"</span>: <span class="json-string">"{{ request_info.method }}"</span>,
+                <span class="json-key">"endpoint"</span>: <span class="json-string">"{{ request_info.endpoint }}"</span>,
+                <span class="json-key">"request_id"</span>: <span class="json-string">"{{ request_info.request_id }}"</span>,
+                <span class="json-key">"timestamp"</span>: <span class="json-string">"{{ request_info.formatted_datetime }}"</span>,
+                <span class="json-key">"payload"</span>: {{ request_info.payload|tojson(indent=2)|safe }}
+            </div>
+        </div>
+        
+        <div id="response-tab" class="tab-content">
+            <h3>Response Data</h3>
+            <div class="info-box">
+                <strong>📥 Final Response:</strong> This shows the response returned to the client.
+            </div>
+            
+            <div class="json-viewer">
+                <span class="json-key">"status_code"</span>: <span class="json-number">{{ request_info.response.status_code or 200 }}</span>,
+                <span class="json-key">"response_time_ms"</span>: <span class="json-number">{{ request_info.response.response_time_ms or 0 }}</span>,
+                <span class="json-key">"response_data"</span>: {{ request_info.response.data|tojson(indent=2)|safe }}
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="/" class="back-button">← Back to Request List</a>
+    </div>
+
+    <script>
+        let allDetailsVisible = false;
+        
+        function toggleDetails(button) {
+            const stepId = button.getAttribute('data-step');
+            const detailsDiv = document.getElementById('details-' + stepId);
+            const toggleText = button.querySelector('.toggle-text');
+            
+            if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                // Show details
+                detailsDiv.style.display = 'block';
+                detailsDiv.classList.add('show');
+                detailsDiv.classList.remove('hide');
+                toggleText.textContent = '🙈 Hide';
+                button.classList.add('active');
+            } else {
+                // Hide details
+                detailsDiv.classList.add('hide');
+                detailsDiv.classList.remove('show');
+                toggleText.textContent = '👁️ Details';
+                button.classList.remove('active');
+                
+                // Hide after animation
+                setTimeout(() => {
+                    if (detailsDiv.classList.contains('hide')) {
+                        detailsDiv.style.display = 'none';
+                    }
+                }, 300);
+            }
+        }
+        
+        function toggleAllDetails() {
+            const allDetailsDivs = document.querySelectorAll('.step-details');
+            const allToggleButtons = document.querySelectorAll('.detail-toggle-btn');
+            const toggleAllText = document.getElementById('toggle-all-text');
+            
+            allDetailsVisible = !allDetailsVisible;
+            
+            if (allDetailsVisible) {
+                // Show all details
+                allDetailsDivs.forEach(div => {
+                    div.style.display = 'block';
+                    div.classList.add('show');
+                    div.classList.remove('hide');
+                });
+                
+                allToggleButtons.forEach(button => {
+                    const toggleText = button.querySelector('.toggle-text');
+                    toggleText.textContent = '🙈 Hide';
+                    button.classList.add('active');
+                });
+                
+                toggleAllText.textContent = '📕 Hide All Details';
+            } else {
+                // Hide all details
+                allDetailsDivs.forEach(div => {
+                    div.classList.add('hide');
+                    div.classList.remove('show');
+                    setTimeout(() => {
+                        if (div.classList.contains('hide')) {
+                            div.style.display = 'none';
+                        }
+                    }, 300);
+                });
+                
+                allToggleButtons.forEach(button => {
+                    const toggleText = button.querySelector('.toggle-text');
+                    toggleText.textContent = '👁️ Details';
+                    button.classList.remove('active');
+                });
+                
+                toggleAllText.textContent = '📖 Show All Details';
+            }
+        }
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Hide all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

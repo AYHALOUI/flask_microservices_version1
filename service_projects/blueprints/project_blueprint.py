@@ -15,7 +15,6 @@ def sync_projects():
     """Sync projects from Oggo to HubSpot"""
     try:
         params = request.json or {}
-        logger.info("Received project sync request")
         result = project_service.sync_projects(params)
         return jsonify(result)
     except Exception as e:
