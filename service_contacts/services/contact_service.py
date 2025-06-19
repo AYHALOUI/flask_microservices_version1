@@ -3,7 +3,7 @@ import os
 import requests
 import json
 from flask import request
-from shared.debugger_client import track_api_call, track_error, FlowTracker
+from shared.debugger_client import track_api_call, track_error, FlowTracker, track_response
 
 
 class ContactService:
@@ -61,6 +61,22 @@ class ContactService:
 
 
     #============ private Methods ===============
+    # def _send_to_hubspot(self, transformed_data):
+    #     """Send transformed data to Hubspot via connect service"""
+    #     url, headers, payload = self._build_hubspot_request(transformed_data)
+
+    #     try:
+    #         response = requests.post(url=url, headers=headers, json=payload)
+    #         if response.status_code != 200:
+    #             error_msg = f"HubSpot API error: Status code {response.status_code}"
+            
+    #         hubspot_response = response.json()
+    #         return hubspot_response
+
+    #     except requests.RequestException as e:
+    #         error_msg = f"Failed to sync data to Hubspot: {str(e)}"
+    #         raise Exception(error_msg)
+        
     def _send_to_hubspot(self, transformed_data):
         """Send transformed data to Hubspot via connect service"""
         url, headers, payload = self._build_hubspot_request(transformed_data)
@@ -71,6 +87,13 @@ class ContactService:
                 error_msg = f"HubSpot API error: Status code {response.status_code}"
             
             hubspot_response = response.json()
+            
+            # NEW: Track receiving response from connect service
+            request_id = request.headers.get('X-Request-ID') if request else None
+            if request_id:
+                tracker = FlowTracker(request_id)
+                track_response(tracker, "service_connect", "service_contacts")
+            
             return hubspot_response
 
         except requests.RequestException as e:
@@ -92,7 +115,6 @@ class ContactService:
         return url, headers, payload
     
 
-
     def _fetch_contacts_from_oggo(self, params):
         """Fetch contacts from oggo via proxy service"""
         url, headers = self._build_oggo_request()
@@ -100,16 +122,61 @@ class ContactService:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             contacts = response.json()
+            
+            # NEW: Track receiving response from connect service
+            request_id = request.headers.get('X-Request-ID') if request else None
+            if request_id:
+                tracker = FlowTracker(request_id)
+                track_response(tracker, "service_connect", "service_contacts")
+            
             return contacts
         except requests.RequestException as e:
             error_msg = f"Failed to fetch contacts from Oggo: {str(e)}"
             raise Exception(error_msg)
+
+
+    # def _fetch_contacts_from_oggo(self, params):
+    #     """Fetch contacts from oggo via proxy service"""
+    #     url, headers = self._build_oggo_request()
+    #     try:
+    #         response = requests.get(url, headers=headers)
+    #         response.raise_for_status()
+    #         contacts = response.json()
+    #         return contacts
+    #     except requests.RequestException as e:
+    #         error_msg = f"Failed to fetch contacts from Oggo: {str(e)}"
+    #         raise Exception(error_msg)
+
+    
     
     def _build_oggo_request(self):
         """Build the request configuration from Oggo Api"""
         url = f"{self.service_connect}/proxy/oggo/contacts"
         headers = {"Content-Type": "application/json"}
         return url, headers
+
+    # def _transform_contacts(self, contacts):
+    #     """Transform contact using the transformation service"""
+    #     url, headers, payload = self._build_transform_request(contacts)
+
+    #     try:        
+    #         response = requests.post(url, headers=headers, json=payload)
+            
+    #         if response.status_code != 200:
+    #             raise Exception(f"Transform service error: {response.text}")
+            
+    #         # Check if response is empty
+    #         if not response.text.strip():
+    #             self.logger.error("Transform service returned empty response")
+    #             return None
+                
+    #         transformed_data = response.json()
+    #         return transformed_data
+        
+    #     except requests.RequestException as e:
+    #         error_msg = f"Failed to transform contacts: {str(e)}"
+    #         self.logger.error(error_msg)
+    #         raise Exception(error_msg)
 
     def _transform_contacts(self, contacts):
         """Transform contact using the transformation service"""
@@ -127,6 +194,13 @@ class ContactService:
                 return None
                 
             transformed_data = response.json()
+            
+            # NEW: Track receiving response from transformer service
+            request_id = request.headers.get('X-Request-ID') if request else None
+            if request_id:
+                tracker = FlowTracker(request_id)
+                track_response(tracker, "service_transformer", "service_contacts")
+            
             return transformed_data
         
         except requests.RequestException as e:

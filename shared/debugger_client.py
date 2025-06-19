@@ -155,10 +155,19 @@ def track_incoming_request(to_service, request_id=None):
 def track_routing(tracker, from_service, to_service):
     tracker.log_flow(from_service, to_service, "routing")
 
+
+
+def track_service_response(tracker, from_service, to_service, action_context=""):
+    """Track service response with optional context"""
+    action = f"response_{action_context}" if action_context else "response"
+    tracker.log_flow(from_service, to_service, action)
+
 def track_api_call(tracker, from_service, to_service, api_name):
-    """Track API call - FIXED VERSION WITH DEBUG"""
-    print(f"🔍 DEBUG: track_api_call called: {from_service} → {to_service} ({api_name})")
-    tracker.log_flow(from_service, to_service, api_name)
+    """Track API call - make sure this works correctly"""
+    if tracker:
+        tracker.log_flow(from_service, to_service, api_name)
 
 def track_response(tracker, from_service, to_service):
-    tracker.log_flow(from_service, to_service, "response")
+    """Track response - make sure this works correctly"""
+    if tracker:
+        tracker.log_flow(from_service, to_service, "response")

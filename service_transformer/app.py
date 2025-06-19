@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import logging
 import requests
-from shared.debugger_client import track_api_call, track_error, FlowTracker
+from shared.debugger_client import track_api_call, track_error, FlowTracker, track_response
 
 
 app = Flask(__name__)
@@ -25,6 +25,101 @@ def get_mapping_from_service(entity_type):
 
 
 
+# @app.route('/transform', methods=['POST'])
+# def transform_data():
+#     try:
+#         request_data = request.json
+        
+#         # Get request ID for tracking
+#         request_id = request.headers.get('X-Request-ID')
+#         tracker = FlowTracker(request_id)
+
+#         if not request_data:
+#             return jsonify({"error": "No data provided"}), 400
+        
+#         # Extract parameters
+#         data = request_data.get('data', [])
+#         entity_type = request_data.get('entity_type', '')
+        
+#         if not entity_type:
+#             return jsonify({"error": "entity_type is required"}), 400
+        
+#         # Track starting transformation process
+#         track_api_call(tracker, "service_transformer", "internal", "start_transformation")
+        
+#         # Track getting mapping from service
+#         track_api_call(tracker, "service_transformer", "service_mapping", "get_mapping_rules")
+#         mapping_rules = get_mapping_from_service(entity_type)
+        
+#         if not mapping_rules:
+#             error_msg = f"No mapping rules found for entity type: {entity_type}"
+#             logger.error(error_msg)
+#             return jsonify({"error": error_msg}), 404
+        
+#         # Track transformation process
+#         track_api_call(tracker, "service_transformer", "internal", "apply_mapping_rules")
+#         transformed_data = transform_using_mapping(data, mapping_rules, entity_type)
+        
+#         # Track completion
+#         track_api_call(tracker, "service_transformer", "internal", "transformation_completed")
+        
+#         # NEW: Track sending response back to calling service
+#         calling_service = _detect_calling_service_from_entity(entity_type)
+#         track_api_call(tracker, "service_transformer", calling_service, f"response_to_{calling_service}")
+
+#         return jsonify(transformed_data)
+    
+#     except Exception as e:
+#         logger.error(f"Error in transform: {str(e)}")
+#         return jsonify({"error": str(e)}), 500
+    
+# @app.route('/transform', methods=['POST'])
+# def transform_data():
+#     try:
+#         request_data = request.json
+        
+#         # Get request ID for tracking
+#         request_id = request.headers.get('X-Request-ID')
+#         tracker = FlowTracker(request_id)
+
+#         if not request_data:
+#             return jsonify({"error": "No data provided"}), 400
+        
+#         # Extract parameters
+#         data = request_data.get('data', [])
+#         entity_type = request_data.get('entity_type', '')
+        
+#         if not entity_type:
+#             return jsonify({"error": "entity_type is required"}), 400
+        
+#         # Track starting transformation process
+#         track_api_call(tracker, "service_transformer", "internal", "start_transformation")
+        
+#         # Track getting mapping from service
+#         track_api_call(tracker, "service_transformer", "service_mapping", "get_mapping_rules")
+#         mapping_rules = get_mapping_from_service(entity_type)
+        
+#         if not mapping_rules:
+#             error_msg = f"No mapping rules found for entity type: {entity_type}"
+#             logger.error(error_msg)
+#             return jsonify({"error": error_msg}), 404
+        
+#         # Track transformation process
+#         track_api_call(tracker, "service_transformer", "internal", "apply_mapping_rules")
+#         transformed_data = transform_using_mapping(data, mapping_rules, entity_type)
+        
+#         # Track completion
+#         track_api_call(tracker, "service_transformer", "internal", "transformation_completed")
+        
+#         # NEW: Track sending response back to calling service
+#         calling_service = _detect_calling_service_from_entity(entity_type)
+#         track_response(tracker, "service_transformer", calling_service)
+
+#         return jsonify(transformed_data)
+#     except Exception as e:
+#         logger.error(f"Error in transform: {str(e)}")
+#         return jsonify({"error": str(e)}), 500
+    
 @app.route('/transform', methods=['POST'])
 def transform_data():
     try:
@@ -63,9 +158,9 @@ def transform_data():
         # Track completion
         track_api_call(tracker, "service_transformer", "internal", "transformation_completed")
         
-        # NEW: Track sending response back to calling service
+        # Track sending response back to calling service
         calling_service = _detect_calling_service_from_entity(entity_type)
-        track_api_call(tracker, "service_transformer", calling_service, f"response_to_{calling_service}")
+        track_response(tracker, "service_transformer", calling_service)
 
         return jsonify(transformed_data)
     
