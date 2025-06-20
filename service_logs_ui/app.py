@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 from datetime import datetime
 from collections import defaultdict
+import json
 
 app = Flask(__name__)
 
@@ -118,15 +119,16 @@ def request_detail(request_id):
             if not request_logs:
                 return f"No logs found for request ID: {request_id}"
             
-            # Separate flow logs from payload logs
+            # Separate flow logs from payload/response logs
             flow_logs = []
-            request_payload = None
-            response_data = None
+            request_payload_log = None
+            response_data_log = None
             request_info = {}
             
             for log in request_logs:
-                if log.get('action') == 'request_payload':
-                    # Extract request info and payload
+                # Look for the incoming request with payload
+                if log.get('action') == 'incoming_request_with_payload':
+                    request_payload_log = log
                     request_info = {
                         'request_id': request_id,
                         'method': log.get('method', 'POST'),
@@ -134,15 +136,10 @@ def request_detail(request_id):
                         'timestamp': log.get('timestamp'),
                         'formatted_datetime': timestamp_to_datetime(log.get('timestamp', 0))
                     }
-                    request_payload = log.get('payload', {})
                     
-                elif log.get('action') == 'response_data':
-                    # Extract response data
-                    response_data = {
-                        'status_code': log.get('status_code', 200),
-                        'response_time_ms': log.get('response_time_ms', 0),
-                        'data': log.get('response', {})
-                    }
+                # Look for the final response
+                elif log.get('action') == 'final_response':
+                    response_data_log = log
                     
                 else:
                     # Regular flow log - enhance with details
@@ -163,7 +160,45 @@ def request_detail(request_id):
                 if 'details' not in log:
                     log['details'] = []
             
-            # Set defaults if no payload/response data found
+            # Extract payload data
+            if request_payload_log:
+                request_payload = request_payload_log.get('payload', {})
+                if not request_info:  # If we didn't set it above
+                    request_info = {
+                        'request_id': request_id,
+                        'method': request_payload_log.get('method', 'POST'),
+                        'endpoint': request_payload_log.get('endpoint', '/unknown'),
+                        'timestamp': request_payload_log.get('timestamp'),
+                        'formatted_datetime': timestamp_to_datetime(request_payload_log.get('timestamp', 0))
+                    }
+            else:
+                request_payload = {'note': 'No request payload captured'}
+            
+            # Extract response data
+            if response_data_log:
+                # The response might be in 'response' field as JSON string or object
+                response_content = response_data_log.get('response')
+                if isinstance(response_content, str):
+                    try:
+                        # Try to parse JSON string
+                        response_content = json.loads(response_content)
+                    except:
+                        # If parsing fails, keep as string
+                        pass
+                
+                response_data = {
+                    'status_code': response_data_log.get('status_code', 200),
+                    'response_time_ms': response_data_log.get('response_time_ms', 0),
+                    'data': response_content
+                }
+            else:
+                response_data = {
+                    'status_code': 200,
+                    'response_time_ms': 0,
+                    'data': {'note': 'No response data captured'}
+                }
+            
+            # Set defaults if no request info found
             if not request_info:
                 initial_log = flow_logs[0] if flow_logs else {}
                 request_info = {
@@ -172,16 +207,6 @@ def request_detail(request_id):
                     'endpoint': '/unknown',
                     'timestamp': initial_log.get('timestamp'),
                     'formatted_datetime': timestamp_to_datetime(initial_log.get('timestamp', 0))
-                }
-            
-            if request_payload is None:
-                request_payload = {'note': 'No request payload captured'}
-            
-            if response_data is None:
-                response_data = {
-                    'status_code': 200,
-                    'response_time_ms': 0,
-                    'data': {'note': 'No response data captured'}
                 }
             
             # Add payload and response to request_info

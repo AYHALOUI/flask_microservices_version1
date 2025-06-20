@@ -1,7 +1,6 @@
 from  flask import  Flask
 import logging
 import os
-# from blueprints.contact_blueprint import conatct_bp
 from blueprints.contact_blueprint import contact_bp
 
 def create_app():

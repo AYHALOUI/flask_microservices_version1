@@ -10,7 +10,13 @@ def create_app():
     logging.basicConfig(level=logging.INFO)
 
     # Register blueprint
-    app.register_blueprint(connect_bp)   
+    app.register_blueprint(connect_bp)
+    
+    # DEBUG: Print all registered routes
+    print("🔍 REGISTERED ROUTES:")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule.rule} -> {rule.endpoint} [{', '.join(rule.methods)}]")
+    
     return app
 
 if __name__ == "__main__":

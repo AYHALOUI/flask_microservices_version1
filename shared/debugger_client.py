@@ -9,7 +9,11 @@ logger = logging.getLogger(__name__)
 
 class FlowTracker:
     def __init__(self, request_id=None):
-        self.request_id = request_id or str(uuid.uuid4())[:8]
+        # FIXED: Only generate new ID if none provided
+        if request_id:
+            self.request_id = request_id
+        else:
+            self.request_id = str(uuid.uuid4())[:8]
         print(f"🔍 DEBUG: FlowTracker created with request_id: {self.request_id}")
     
     def log_flow(self, from_service, to_service, action, data=None):
@@ -144,7 +148,8 @@ def track_final_response(tracker, service, status_code, response_data=None, resp
 def track_error(tracker, service, error_message, context=None):
     """Track an error - FIXED VERSION WITH DEBUG"""
     print(f"🔍 DEBUG: track_error called: {service} - {error_message}")
-    tracker.log_error(service, error_message, context)
+    if tracker:
+        tracker.log_error(service, error_message, context)
 
 # Existing functions (unchanged)
 def track_incoming_request(to_service, request_id=None):
@@ -153,14 +158,14 @@ def track_incoming_request(to_service, request_id=None):
     return tracker
 
 def track_routing(tracker, from_service, to_service):
-    tracker.log_flow(from_service, to_service, "routing")
-
-
+    if tracker:
+        tracker.log_flow(from_service, to_service, "routing")
 
 def track_service_response(tracker, from_service, to_service, action_context=""):
     """Track service response with optional context"""
-    action = f"response_{action_context}" if action_context else "response"
-    tracker.log_flow(from_service, to_service, action)
+    if tracker:
+        action = f"response_{action_context}" if action_context else "response"
+        tracker.log_flow(from_service, to_service, action)
 
 def track_api_call(tracker, from_service, to_service, api_name):
     """Track API call - make sure this works correctly"""

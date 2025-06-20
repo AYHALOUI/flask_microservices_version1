@@ -15,7 +15,7 @@ class ProjectService:
         self.service_connect = os.environ.get('SERVICE_CONNECT')
 
     def sync_projects(self, params):
-        """Main method to sync projects from Oggo to HubSpot - CLEAN VERSION"""
+        """Main method to sync projects from Oggo to HubSpot - COMPLETE VERSION"""
         try:
             request_id = request.headers.get('X-Request-ID') if request else None
             tracker = FlowTracker(request_id)
@@ -27,6 +27,8 @@ class ProjectService:
             projects = self._fetch_projects_from_oggo(params)
             
             if not projects:
+                # NEW: Track response back to gateway even for empty results
+                track_response(tracker, "service_projects", "gateway")
                 return {"message": "No projects found to sync"}
             
             # Step 2: Track call to transformer service
@@ -41,6 +43,9 @@ class ProjectService:
             # Send to HubSpot
             hubspot_response = self._send_to_hubspot(transformed_data)
             
+            # NEW: Track response from projects service back to gateway
+            track_response(tracker, "service_projects", "gateway")
+            
             return {
                 "status": "success",
                 "message": f"Successfully processed {len(projects)} projects",
@@ -49,22 +54,14 @@ class ProjectService:
             }
             
         except Exception as e:
+            # NEW: Track response back to gateway even for errors
+            request_id = request.headers.get('X-Request-ID') if request else None
+            if request_id:
+                tracker = FlowTracker(request_id)
+                track_response(tracker, "service_projects", "gateway")
+            
             track_error(tracker, "service_projects", str(e), f"Params: {params}")
             raise e
-
-    # def _fetch_projects_from_oggo(self, params):
-    #     """Fetch projects from Oggo via proxy service"""
-    #     url, headers = self._build_oggo_request()
-    #     try:
-    #         response = requests.get(url, headers=headers)
-    #         response.raise_for_status()
-    #         projects = response.json()
-    #         return projects
-    #     except requests.RequestException as e:
-    #         error_msg = f"Failed to fetch projects from Oggo: {str(e)}"
-    #         raise Exception(error_msg)
-    
-   
         
     def _fetch_projects_from_oggo(self, params):
         """Fetch projects from Oggo via proxy service"""
@@ -74,7 +71,7 @@ class ProjectService:
             response.raise_for_status()
             projects = response.json()
             
-            # NEW: Track receiving response from connect service
+            # Track receiving response from connect service
             request_id = request.headers.get('X-Request-ID') if request else None
             if request_id:
                 tracker = FlowTracker(request_id)
@@ -106,7 +103,7 @@ class ProjectService:
                 
             transformed_data = response.json()
             
-            # NEW: Track receiving response from transformer service
+            # Track receiving response from transformer service
             request_id = request.headers.get('X-Request-ID') if request else None
             if request_id:
                 tracker = FlowTracker(request_id)
@@ -117,28 +114,6 @@ class ProjectService:
             error_msg = f"Failed to transform projects: {str(e)}"
             self.logger.error(error_msg)
             raise Exception(error_msg)
-
-    # def _transform_projects(self, projects):
-    #     """Transform projects using the transformation service"""
-    #     url, headers, payload = self._build_transform_request(projects)
-
-    #     try:
-        
-    #         response = requests.post(url, headers=headers, json=payload)
-    #         if response.status_code != 200:
-    #             raise Exception(f"Transform service error: {response.text}")
-            
-    #         # Check if response is empty
-    #         if not response.text.strip():
-    #             return None
-                
-    #         transformed_data = response.json()
-    #         return transformed_data
-        
-    #     except requests.RequestException as e:
-    #         error_msg = f"Failed to transform projects: {str(e)}"
-    #         self.logger.error(error_msg)
-    #         raise Exception(error_msg)
         
     def load_mapping(self, mapping_file):
         """Load mapping configuration from JSON file"""
@@ -159,23 +134,6 @@ class ProjectService:
         }
         return url, headers, payload
 
-    # def _send_to_hubspot(self, transformed_data):
-    #     """Send transformed data to HubSpot via connect service"""
-    #     url, headers, payload = self._build_hubspot_request(transformed_data)
-
-    #     try:
-    #         response = requests.post(url=url, headers=headers, json=payload)
-    #         if response.status_code not in [200, 201]:
-    #             error_msg = f"HubSpot API error: Status code {response.status_code}"
-    #             raise Exception(error_msg)
-            
-    #         hubspot_response = response.json()
-    #         return hubspot_response
-
-    #     except requests.RequestException as e:
-    #         error_msg = f"Failed to sync projects to HubSpot: {str(e)}"
-    #         raise Exception(error_msg)
-
     def _send_to_hubspot(self, transformed_data):
         """Send transformed data to HubSpot via connect service"""
         url, headers, payload = self._build_hubspot_request(transformed_data)
@@ -188,7 +146,7 @@ class ProjectService:
             
             hubspot_response = response.json()
             
-            # NEW: Track receiving response from connect service
+            # Track receiving response from connect service
             request_id = request.headers.get('X-Request-ID') if request else None
             if request_id:
                 tracker = FlowTracker(request_id)

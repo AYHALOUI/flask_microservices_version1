@@ -27,84 +27,29 @@ class ConnectService:
             }
         }
 
-    
-    # def proxy_request(self, target, endpoint, method, headers, data, params=None):
-    #     """Proxy a request to an external service with enhanced tracking"""
-
-    #     # Get request ID from headers if available
-    #     request_id = headers.get('X-Request-ID')
-    #     tracker = FlowTracker(request_id)
-        
-    #     # Validate target
-    #     target = self._validate_target(target)
-        
-    #     # Build target URL
-    #     target_url = self._build_target_url(target, endpoint)
-        
-    #     # Prepare headers with authentication
-    #     prepared_headers = self._prepare_headers(target, headers)
-
-    #     # Track outgoing API call to external service
-    #     track_api_call(tracker, "service_connect", f"external_{target}", f"api_call")
-        
-    #     response = self._execute_proxy_request(method, target_url, prepared_headers, data, params)
-
-    #     # Track response from external service
-    #     track_response(tracker, f"external_{target}", "service_connect")
-        
-    #     # NEW: Track sending response back to calling service
-    #     calling_service = self._detect_calling_service(headers, endpoint)
-    #     track_response(tracker, "service_connect", calling_service)
-
-    #     return response
-
-    # def proxy_request(self, target, endpoint, method, headers, data, params=None):
-    #     """Proxy a request to an external service with complete tracking"""
-
-    #     # Get request ID from headers if available
-    #     request_id = headers.get('X-Request-ID')
-    #     tracker = FlowTracker(request_id)
-        
-    #     # Validate target
-    #     target = self._validate_target(target)
-        
-    #     # Build target URL
-    #     target_url = self._build_target_url(target, endpoint)
-        
-    #     # Prepare headers with authentication
-    #     prepared_headers = self._prepare_headers(target, headers)
-
-    #     # Track outgoing API call to external service
-    #     track_api_call(tracker, "service_connect", f"external_{target}", "api_call")
-        
-    #     response = self._execute_proxy_request(method, target_url, prepared_headers, data, params)
-
-    #     # Track response from external service
-    #     track_response(tracker, f"external_{target}", "service_connect")
-        
-    #     # Track sending response back to calling service
-    #     calling_service = self._detect_calling_service(headers, endpoint)
-    #     track_response(tracker, "service_connect", calling_service)
-
-    #     return response
-
     def proxy_request(self, target, endpoint, method, headers, data, params=None):
-        """Enhanced proxy request with maximum tracking detail"""
+        """Enhanced proxy request with extensive debugging"""
 
-        # Get request ID from headers if available
+        # EXTENSIVE DEBUGGING
         request_id = headers.get('X-Request-ID')
+        print(f"🔍 CONNECT DEBUG: Received request_id: {request_id}")
+        print(f"🔍 CONNECT DEBUG: Target: {target}, Endpoint: {endpoint}, Method: {method}")
+        
         tracker = FlowTracker(request_id)
+        print(f"🔍 CONNECT DEBUG: FlowTracker created with ID: {tracker.request_id}")
         
         # Validate target
         target = self._validate_target(target)
         
         # Build target URL
         target_url = self._build_target_url(target, endpoint)
+        print(f"🔍 CONNECT DEBUG: Target URL: {target_url}")
         
         # Prepare headers with authentication
         prepared_headers = self._prepare_headers(target, headers)
 
-        # MORE SPECIFIC: Track the specific API call based on endpoint
+        # Track the API call to external service
+        print(f"🔍 CONNECT DEBUG: About to track API call to external_{target}")
         if 'contacts' in endpoint and method == 'GET':
             track_api_call(tracker, "service_connect", f"external_{target}", "fetch_contacts")
         elif 'projects' in endpoint and method == 'GET':
@@ -116,28 +61,21 @@ class ConnectService:
         else:
             track_api_call(tracker, "service_connect", f"external_{target}", "api_call")
         
+        print(f"🔍 CONNECT DEBUG: API call tracked, now making actual request")
         response = self._execute_proxy_request(method, target_url, prepared_headers, data, params)
+        print(f"🔍 CONNECT DEBUG: Got response from external service")
 
         # Track response from external service
+        print(f"🔍 CONNECT DEBUG: About to track response from external_{target}")
         track_response(tracker, f"external_{target}", "service_connect")
         
         # Track sending response back to calling service
         calling_service = self._detect_calling_service(headers, endpoint)
+        print(f"🔍 CONNECT DEBUG: About to track response to {calling_service}")
         track_response(tracker, "service_connect", calling_service)
 
+        print(f"🔍 CONNECT DEBUG: All tracking complete, returning response")
         return response
-
-
-
-    # def _detect_calling_service(self, headers, endpoint):
-    #     """Detect which service called us based on headers or endpoint"""
-    #     # You can detect this from headers, endpoint patterns, etc.
-    #     if 'contacts' in endpoint.lower():
-    #         return "service_contacts"
-    #     elif 'projects' in endpoint.lower():
-    #         return "service_projects"
-    #     else:
-    #         return "service_unknown"
 
     def _detect_calling_service(self, headers, endpoint):
         """Detect which service called us based on headers or endpoint"""
